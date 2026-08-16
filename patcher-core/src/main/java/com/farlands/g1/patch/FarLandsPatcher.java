@@ -39,6 +39,9 @@ public final class FarLandsPatcher {
         //   D 生成连续性线: -Dfarlands.continuity
         boolean wide = Boolean.getBoolean("farlands.wide");
         boolean continuity = Boolean.getBoolean("farlands.continuity");
+        if (continuity && !wide) {
+            throw new IllegalArgumentException("farlands.continuity 依赖 farlands.wide（B 线容器宽化）");
+        }
         p.register(continuity ? FunctionContextRealPatch.global() : FunctionContextRealPatch.noiseOnly());
         p.register(new Vec3iPatch());
         if (wide) {
@@ -50,6 +53,7 @@ public final class FarLandsPatcher {
         }
         if (continuity) {
             p.register(new AquiferContextPatch());
+            p.register(new AquiferLatticePatch());
         }
         p.register(new GsuPatch());
         p.register(new AabbClipPatch());
