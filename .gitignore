@@ -1,0 +1,15 @@
+# Build outputs
+build/
+.gradle/
+mod/build/
+mod/.gradle/
+patcher-core/build/
+patcher-cli/build/
+buildSrc/build/
+
+# IDE
+.idea/
+*.iml
+
+# OS
+Thumbs.db
