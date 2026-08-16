@@ -1,0 +1,31 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+application {
+    mainClass = 'com.farlands.g1.cli.Main'
+}
+
+dependencies {
+    implementation project(':patcher-core')
+}
+
+jar {
+    dependsOn configurations.runtimeClasspath
+    manifest {
+        attributes(
+            'Main-Class': 'com.farlands.g1.cli.Main',
+            'Implementation-Title': 'FarLands Patcher',
+            'Implementation-Version': project.version
+        )
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+}

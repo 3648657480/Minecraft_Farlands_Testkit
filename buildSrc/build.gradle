@@ -1,0 +1,27 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://maven.aliyun.com/repository/public' }
+    maven { url 'https://maven.fabricmc.net/' }
+}
+
+dependencies {
+    implementation 'org.ow2.asm:asm:9.8'
+    implementation 'org.ow2.asm:asm-tree:9.8'
+    implementation 'net.fabricmc:fabric-loom:1.17.13'
+}
+
+// Compile the patcher-core sources directly into the buildscript classpath
+// so the Loom processor always runs against the current patch set.
+sourceSets {
+    main {
+        java.srcDirs += ['../patcher-core/src/main/java']
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

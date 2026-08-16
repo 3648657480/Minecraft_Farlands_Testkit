@@ -1,0 +1,18 @@
+{
+    "schemaVersion": 1,
+    "id": "farlands-g1",
+    "version": "1.0-SNAPSHOT",
+    "name": "FarLands G1 Mod",
+    "description": "Runtime support for the FarLands patched client (2^63 coordinates)",
+    "authors": ["FarLands Dev"],
+    "license": "MIT",
+    "environment": "*",
+    "depends": {
+        "fabricloader": ">=0.19.3",
+        "minecraft": "26.2"
+    },
+    "entrypoints": {
+        "main": ["com.farlands.g1.G1Mod"]
+    },
+    "mixins": ["farlands-g1.mixins.json"]
+}

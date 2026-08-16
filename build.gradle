@@ -1,0 +1,13 @@
+allprojects {
+    group = 'com.farlands'
+    version = project.hasProperty('mod_version') ? project.mod_version : '1.0.0'
+
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        mavenCentral()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+}

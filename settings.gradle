@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        maven {
+            name = 'Aliyun'
+            url = 'https://maven.aliyun.com/repository/public'
+        }
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'farlands-g1'
+
+include 'patcher-core'
+include 'patcher-cli'
+include 'mod'

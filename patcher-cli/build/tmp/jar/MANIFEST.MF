@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Main-Class: com.farlands.g1.cli.Main
+Implementation-Title: FarLands Patcher
+Implementation-Version: 1.0-SNAPSHOT
+
