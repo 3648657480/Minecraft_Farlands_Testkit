@@ -37,7 +37,8 @@
         "Vec3RealCoordsMixin",
         "BufferBuilderGrowMixin",
         "MineshaftSkipMixin",
-        "ChunkMapGenRateLimitMixin"
+        "ChunkMapGenRateLimitMixin",
+        "EntityFluidInteractionFarGuardMixin"
     ],
     "client": [
         "RenderSectionRegionMixin",

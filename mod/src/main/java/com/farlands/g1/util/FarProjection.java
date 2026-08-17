@@ -68,9 +68,17 @@ public final class FarProjection {
         return block < WRAP_BAND ? (double) (block + (1L << 32)) : (double) block;
     }
 
-    /** Epoch-normalized chunk coordinate. */
+    /**
+     * Epoch-normalized chunk coordinate.
+     *
+     * <p>Identity at the 2^31 milestone: the negative chunk band is entirely
+     * valid int territory, and any shift would alias it onto real positive
+     * chunks past the seam (observed: negative side rendered the positive
+     * side's chunks). Epoch shifting becomes necessary only beyond 2^31
+     * (E line).</p>
+     */
     public static int chunkNorm(int chunk) {
-        return chunk < WRAP_BAND ? chunk + CHUNK_SHIFT : chunk;
+        return chunk;
     }
 
     /** Whether the coordinate lies in the wrapped band. */

@@ -90,18 +90,12 @@ public final class ClientChunkCachePatch implements ClassPatch {
 
     private static MethodNode normMethod() {
         MethodNode mn = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "norm", "(I)I", null, null);
-        LabelNode plain = new LabelNode();
-        InsnList il = mn.instructions;
-        il.add(new VarInsnNode(Opcodes.ILOAD, 0));
-        il.add(new LdcInsnNode(-100_000_000));
-        il.add(new JumpInsnNode(Opcodes.IF_ICMPGE, plain));
-        il.add(new VarInsnNode(Opcodes.ILOAD, 0));
-        il.add(new LdcInsnNode(SHIFT));
-        il.add(new InsnNode(Opcodes.IADD));
-        il.add(new InsnNode(Opcodes.IRETURN));
-        il.add(plain);
-        il.add(new VarInsnNode(Opcodes.ILOAD, 0));
-        il.add(new InsnNode(Opcodes.IRETURN));
+        // Identity at the 2^31 milestone: the negative chunk band is valid int
+        // territory; shifting by 2^28 aliased it onto real chunks past the seam
+        // (negative side mirrored the positive side). Epoch shifting moves to
+        // the E line (beyond 2^31).
+        mn.instructions.add(new VarInsnNode(Opcodes.ILOAD, 0));
+        mn.instructions.add(new InsnNode(Opcodes.IRETURN));
         return mn;
     }
 
@@ -189,9 +183,13 @@ public final class ClientChunkCachePatch implements ClassPatch {
     }
 
     // getChunk(int x, int z, ChunkStatus status, boolean loadOrGenerate)
+    // Vanilla shape (no linear scan): with identity norm the storage keys are
+    // the raw chunk coordinates at the 2^31 milestone, so the fast path is
+    // exactly the vanilla lookup. The scan used to mask the old +2^28 epoch
+    // mismatch; it turned every miss into an O(storage) walk and froze the
+    // render thread at the negative extreme.
     private static InsnList getChunk() {
         InsnList il = new InsnList();
-        LabelNode scan = new LabelNode();
         LabelNode notFound = new LabelNode();
         // nx = norm(x); nz = norm(z)
         il.add(new VarInsnNode(Opcodes.ILOAD, 1));
@@ -200,14 +198,15 @@ public final class ClientChunkCachePatch implements ClassPatch {
         il.add(new VarInsnNode(Opcodes.ILOAD, 2));
         il.add(normCall());
         il.add(new VarInsnNode(Opcodes.ISTORE, 6));
-        // if (storage.inRange(nx, nz)) { chunk = storage.getChunk(storage.getIndex(nx, nz)); if (isValidChunk(chunk, nx, nz)) return chunk; }
+        // if (storage.inRange(nx, nz)) { chunk = storage.getChunk(storage.getIndex(nx, nz));
+        //   if (isValidChunk(chunk, nx, nz)) return chunk; }
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));
         il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "storage",
             "Lnet/minecraft/client/multiplayer/ClientChunkCache$Storage;"));
         il.add(new VarInsnNode(Opcodes.ILOAD, 5));
         il.add(new VarInsnNode(Opcodes.ILOAD, 6));
         il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, TARGET + "$Storage", "inRange", "(II)Z", false));
-        il.add(new JumpInsnNode(Opcodes.IFEQ, scan));
+        il.add(new JumpInsnNode(Opcodes.IFEQ, notFound));
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));
         il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "storage",
             "Lnet/minecraft/client/multiplayer/ClientChunkCache$Storage;"));
@@ -225,65 +224,19 @@ public final class ClientChunkCachePatch implements ClassPatch {
         il.add(new VarInsnNode(Opcodes.ILOAD, 6));
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, TARGET, "isValidChunk",
             "(Lnet/minecraft/world/level/chunk/LevelChunk;II)Z", false));
-        il.add(new JumpInsnNode(Opcodes.IFEQ, scan));
+        il.add(new JumpInsnNode(Opcodes.IFEQ, notFound));
         il.add(new VarInsnNode(Opcodes.ALOAD, 7));
         il.add(new InsnNode(Opcodes.ARETURN));
-        // fallback linear scan
-        il.add(scan);
-        il.add(new InsnNode(Opcodes.ICONST_0));
-        il.add(new VarInsnNode(Opcodes.ISTORE, 7));
-        LabelNode loop = new LabelNode();
-        LabelNode continueLabel = new LabelNode();
-        LabelNode returnNullLabel = new LabelNode();
-        il.add(loop);
-        il.add(new VarInsnNode(Opcodes.ILOAD, 7));
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "storage",
-            "Lnet/minecraft/client/multiplayer/ClientChunkCache$Storage;"));
-        il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET + "$Storage", "chunks",
-            "Ljava/util/concurrent/atomic/AtomicReferenceArray;"));
-        il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/util/concurrent/atomic/AtomicReferenceArray", "length",
-            "()I", false));
-        il.add(new JumpInsnNode(Opcodes.IF_ICMPGE, notFound));
-        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "storage",
-            "Lnet/minecraft/client/multiplayer/ClientChunkCache$Storage;"));
-        il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET + "$Storage", "chunks",
-            "Ljava/util/concurrent/atomic/AtomicReferenceArray;"));
-        il.add(new VarInsnNode(Opcodes.ILOAD, 7));
-        il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/util/concurrent/atomic/AtomicReferenceArray", "get",
-            "(I)Ljava/lang/Object;", false));
-        il.add(new org.objectweb.asm.tree.TypeInsnNode(Opcodes.CHECKCAST, "net/minecraft/world/level/chunk/LevelChunk"));
-        il.add(new VarInsnNode(Opcodes.ASTORE, 8));
-        il.add(new VarInsnNode(Opcodes.ALOAD, 8));
-        il.add(new JumpInsnNode(Opcodes.IFNULL, continueLabel));
-        il.add(new VarInsnNode(Opcodes.ALOAD, 8));
-        il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/world/level/chunk/LevelChunk", "getPos",
-            "()Lnet/minecraft/world/level/ChunkPos;", false));
-        il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/world/level/ChunkPos", "x", "()I", false));
-        il.add(normCall());
-        il.add(new VarInsnNode(Opcodes.ILOAD, 5));
-        il.add(new JumpInsnNode(Opcodes.IF_ICMPNE, continueLabel));
-        il.add(new VarInsnNode(Opcodes.ALOAD, 8));
-        il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/world/level/chunk/LevelChunk", "getPos",
-            "()Lnet/minecraft/world/level/ChunkPos;", false));
-        il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/world/level/ChunkPos", "z", "()I", false));
-        il.add(normCall());
-        il.add(new VarInsnNode(Opcodes.ILOAD, 6));
-        il.add(new JumpInsnNode(Opcodes.IF_ICMPNE, continueLabel));
-        il.add(new VarInsnNode(Opcodes.ALOAD, 8));
-        il.add(new InsnNode(Opcodes.ARETURN));
-        il.add(continueLabel);
-        il.add(new org.objectweb.asm.tree.IincInsnNode(7, 1));
-        il.add(new JumpInsnNode(Opcodes.GOTO, loop));
+        // return loadOrGenerate ? emptyChunk : null
         il.add(notFound);
+        LabelNode returnNull = new LabelNode();
         il.add(new VarInsnNode(Opcodes.ILOAD, 4));
-        il.add(new JumpInsnNode(Opcodes.IFEQ, returnNullLabel));
+        il.add(new JumpInsnNode(Opcodes.IFEQ, returnNull));
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));
         il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "emptyChunk",
             "Lnet/minecraft/world/level/chunk/LevelChunk;"));
         il.add(new InsnNode(Opcodes.ARETURN));
-        il.add(returnNullLabel);
+        il.add(returnNull);
         il.add(new InsnNode(Opcodes.ACONST_NULL));
         il.add(new InsnNode(Opcodes.ARETURN));
         return il;
