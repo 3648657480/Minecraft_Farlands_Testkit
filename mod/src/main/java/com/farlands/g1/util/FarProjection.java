@@ -41,6 +41,9 @@ public final class FarProjection {
     }
 
     public static void setEpoch(long epochX, long epochZ) {
+        if (!epochSupported()) {
+            return; // 非 epoch 客户端 jar（J1-J3）：epoch 必须保持休眠
+        }
         epochBlockX = epochX;
         epochBlockZ = epochZ;
     }
