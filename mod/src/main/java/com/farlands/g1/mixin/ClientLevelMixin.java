@@ -23,25 +23,11 @@ public class ClientLevelMixin {
 
     @Unique
     private static int farlands$normX(int c) {
-        if (farlands$epoch()) {
-            int delta = com.farlands.g1.util.FarProjection.epochChunkDeltaX();
-            if (Math.abs(c - delta) < Math.abs(c)) {
-                return c - delta;
-            }
-            return c;
-        }
         return com.farlands.g1.util.FarProjection.chunkNorm(c);
     }
 
     @Unique
     private static int farlands$normZ(int c) {
-        if (farlands$epoch()) {
-            int delta = com.farlands.g1.util.FarProjection.epochChunkDeltaZ();
-            if (Math.abs(c - delta) < Math.abs(c)) {
-                return c - delta;
-            }
-            return c;
-        }
         return com.farlands.g1.util.FarProjection.chunkNorm(c);
     }
 

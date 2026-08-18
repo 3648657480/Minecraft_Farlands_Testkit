@@ -57,6 +57,7 @@ public final class FarLandsPatcher {
         }
         if (epoch) {
             p.register(new ChunkPosEpochPatch());
+            p.register(new WorldGenRegionEpochPatch());
         }
         if (continuity) {
             p.register(new AquiferContextPatch());

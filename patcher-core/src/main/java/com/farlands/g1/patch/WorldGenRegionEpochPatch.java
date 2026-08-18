@@ -4,6 +4,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -11,13 +12,11 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  * E line: translates epoch-relative chunk requests to real chunk
- * coordinates in {@code WorldGenRegion.getChunk}.
- *
- * <p>The surface/decorator stages sample biomes and blocks through the
- * epoch-relative generation domain, but the region caches chunks under
- * their real coordinates. Without the translation every query misses and
- * generation crashes with "Requested chunk unavailable during world
- * generation".</p>
+ * coordinates at the {@code WorldGenRegion.getChunk} boundary, using the
+ * center-based "closer after translation" rule. The noise pipeline
+ * (surface, biome, references) queries in the epoch-relative domain while
+ * the region caches chunks under their real coordinates; real-domain
+ * callers (structure managers) pass through untouched.
  */
 public final class WorldGenRegionEpochPatch implements ClassPatch {
 
@@ -48,11 +47,23 @@ public final class WorldGenRegionEpochPatch implements ClassPatch {
         }
 
         InsnList il = new InsnList();
+        // centerX into local 5
+        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "centerChunkX", "I"));
+        il.add(new VarInsnNode(Opcodes.ISTORE, 5));
+        // x = epochTranslatedChunkX(x, centerX)
         il.add(new VarInsnNode(Opcodes.ILOAD, 1));
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, PROJECTION, "epochRealChunkX", "(I)I", false));
+        il.add(new VarInsnNode(Opcodes.ILOAD, 5));
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, PROJECTION, "epochTranslatedChunkX", "(II)I", false));
         il.add(new VarInsnNode(Opcodes.ISTORE, 1));
+        // centerZ into local 6
+        il.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "centerChunkZ", "I"));
+        il.add(new VarInsnNode(Opcodes.ISTORE, 6));
+        // z = epochTranslatedChunkZ(z, centerZ)
         il.add(new VarInsnNode(Opcodes.ILOAD, 2));
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, PROJECTION, "epochRealChunkZ", "(I)I", false));
+        il.add(new VarInsnNode(Opcodes.ILOAD, 6));
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, PROJECTION, "epochTranslatedChunkZ", "(II)I", false));
         il.add(new VarInsnNode(Opcodes.ISTORE, 2));
         m.instructions.insert(il);
 
@@ -63,6 +74,6 @@ public final class WorldGenRegionEpochPatch implements ClassPatch {
 
     @Override
     public String describe(String internalName) {
-        return "WorldGenRegionEpochPatch (chunk requests epoch-translated)";
+        return "WorldGenRegionEpochPatch (center-based chunk translation)";
     }
 }

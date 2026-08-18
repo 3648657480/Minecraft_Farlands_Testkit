@@ -90,6 +90,34 @@ public final class FarProjection {
         return local;
     }
 
+    /**
+     * Center-based translation for the WorldGenRegion boundary: translate
+     * the request by the epoch delta only if that moves it closer to the
+     * generating chunk's real position. Local generation queries get
+     * translated (they sit near local zero, far from the real center);
+     * real-domain queries (structure references) stay put. Unlike a
+     * magnitude gate, this also handles chunks whose local coordinates are
+     * extreme (spawn-area chunks when the epoch is far away).
+     */
+    public static int epochTranslatedChunkX(int x, int centerX) {
+        if (!isEpochActive()) return x;
+        int nx = x + epochChunkDeltaX();
+        if (Math.abs((long) nx - centerX) < Math.abs((long) x - centerX)) {
+            return nx;
+        }
+        return x;
+    }
+
+    /** Center-based translation for the WorldGenRegion boundary (Z axis). */
+    public static int epochTranslatedChunkZ(int z, int centerZ) {
+        if (!isEpochActive()) return z;
+        int nz = z + epochChunkDeltaZ();
+        if (Math.abs((long) nz - centerZ) < Math.abs((long) z - centerZ)) {
+            return nz;
+        }
+        return z;
+    }
+
     private static volatile int epochSupported = -1;
 
     /** Whether the client jar carries the E-line epoch patches. */
