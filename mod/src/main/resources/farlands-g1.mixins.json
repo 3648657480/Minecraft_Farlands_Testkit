@@ -12,6 +12,7 @@
         "LevelSetBlockMixin",
         "PlayerMixin",
         "ServerPlayerMixin",
+        "ServerPlayerEpochMixin",
         "ServerPlayerInteractMixin",
         "ServerGamePacketListenerImplMixin",
         "TeleportCommandMixin",
@@ -50,7 +51,8 @@
         "RenderSectionVertexSortingMixin",
         "GlobalSettingsUniformGrabMixin",
         "LevelRendererCamWrapMixin",
-        "ParticlePosMixin"
+        "ParticlePosMixin",
+        "ClientPacketListenerEpochMixin"
     ],
     "injectors": { "defaultRequire": 1 }
 }

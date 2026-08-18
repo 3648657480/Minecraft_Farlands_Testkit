@@ -28,7 +28,115 @@ public final class FarProjection {
     private static final ThreadLocal<Long> ORIGIN_X = new ThreadLocal<>();
     private static final ThreadLocal<Long> ORIGIN_Z = new ThreadLocal<>();
 
+    /**
+     * E line: the epoch origin in REAL block coordinates. Every int domain
+     * (chunk, section, block, generation cell) is expressed relative to it,
+     * so int math never overflows; real = epoch + local. Set once per world
+     * join / teleport to the player's chunk. 0 = vanilla behavior.
+     */
+    private static volatile long epochBlockX;
+    private static volatile long epochBlockZ;
+
     private FarProjection() {
+    }
+
+    public static void setEpoch(long epochX, long epochZ) {
+        epochBlockX = epochX;
+        epochBlockZ = epochZ;
+    }
+
+    public static boolean isEpochActive() {
+        return epochBlockX != 0L || epochBlockZ != 0L;
+    }
+
+    public static long epochBlockX() {
+        return epochBlockX;
+    }
+
+    public static long epochBlockZ() {
+        return epochBlockZ;
+    }
+
+    /** Epoch chunk delta: real chunk = local + this. */
+    public static int epochChunkDeltaX() {
+        return (int) (epochBlockX >> 4);
+    }
+
+    /** Epoch chunk delta: real chunk = local + this. */
+    public static int epochChunkDeltaZ() {
+        return (int) (epochBlockZ >> 4);
+    }
+
+    /** Real chunk coordinate of an epoch-relative chunk coordinate; gated
+     *  so real-domain callers (structure references, spawn finder) pass
+     *  through untranslated. */
+    public static int epochRealChunkX(int local) {
+        if (isEpochActive() && Math.abs(local) < 1_000_000) {
+            return (int) (epochBlockX >> 4) + local;
+        }
+        return local;
+    }
+
+    /** Real chunk coordinate of an epoch-relative chunk coordinate; gated
+     *  so real-domain callers (structure references, spawn finder) pass
+     *  through untranslated. */
+    public static int epochRealChunkZ(int local) {
+        if (isEpochActive() && Math.abs(local) < 1_000_000) {
+            return (int) (epochBlockZ >> 4) + local;
+        }
+        return local;
+    }
+
+    private static volatile int epochSupported = -1;
+
+    /** Whether the client jar carries the E-line epoch patches. */
+    public static boolean epochSupported() {
+        int s = epochSupported;
+        if (s == -1) {
+            try {
+                net.minecraft.world.level.ChunkPos.class.getDeclaredField("farlands$epoch");
+                s = 1;
+            } catch (ReflectiveOperationException e) {
+                s = 0;
+            }
+            epochSupported = s;
+        }
+        return s == 1;
+    }
+
+    /** Epoch-relative min block X of a real chunk coordinate. */
+    public static int epochMinBlockX(long realChunk) {
+        return (int) ((realChunk - (epochBlockX >> 4)) << 4);
+    }
+
+    /** Epoch-relative min block Z of a real chunk coordinate. */
+    public static int epochMinBlockZ(long realChunk) {
+        return (int) ((realChunk - (epochBlockZ >> 4)) << 4);
+    }
+
+    /** Real block coordinate of an epoch-relative block value. */
+    public static double realBlockX(int local) {
+        return (double) epochBlockX + (double) local;
+    }
+
+    /** Real block coordinate of an epoch-relative block value. */
+    public static double realBlockZ(int local) {
+        return (double) epochBlockZ + (double) local;
+    }
+
+    /** Epoch-relative chunk coordinate of a real chunk coordinate. */
+    public static int epochChunkX(long realChunk) {
+        return (int) (realChunk - (epochBlockX >> 4));
+    }
+
+    /** Epoch-relative chunk coordinate of a real chunk coordinate. */
+    public static int epochChunkZ(long realChunk) {
+        return (int) (realChunk - (epochBlockZ >> 4));
+    }
+
+    /** Real chunk coordinate of an epoch-relative chunk coordinate. */
+    public static long realChunkX(int local) {
+        return (epochBlockX >> 4) + (long) local;
     }
 
     /** Called by the patched NoiseChunk.forChunk before generation starts. */
@@ -52,6 +160,9 @@ public final class FarProjection {
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
             return (double) (origin + (v - (int) (long) origin));
         }
+        if (isEpochActive()) {
+            return (double) epochBlockX + (double) v;
+        }
         return (double) v;
     }
 
@@ -59,6 +170,9 @@ public final class FarProjection {
         Long origin = ORIGIN_Z.get();
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
             return (double) (origin + (v - (int) (long) origin));
+        }
+        if (isEpochActive()) {
+            return (double) epochBlockZ + (double) v;
         }
         return (double) v;
     }

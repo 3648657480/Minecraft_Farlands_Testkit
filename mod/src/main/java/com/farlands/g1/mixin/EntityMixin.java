@@ -13,7 +13,11 @@ public class EntityMixin {
 
     @Overwrite
     public int getBlockX() {
-        return (int)(long)Math.floor(((Entity)(Object)this).getX());
+        double x = ((Entity)(Object)this).getX();
+        if (com.farlands.g1.util.FarProjection.isEpochActive()) {
+            return (int)(long)Math.floor(x - com.farlands.g1.util.FarProjection.epochBlockX());
+        }
+        return (int)(long)Math.floor(x);
     }
 
     @Overwrite
@@ -23,6 +27,10 @@ public class EntityMixin {
 
     @Overwrite
     public int getBlockZ() {
-        return (int)(long)Math.floor(((Entity)(Object)this).getZ());
+        double z = ((Entity)(Object)this).getZ();
+        if (com.farlands.g1.util.FarProjection.isEpochActive()) {
+            return (int)(long)Math.floor(z - com.farlands.g1.util.FarProjection.epochBlockZ());
+        }
+        return (int)(long)Math.floor(z);
     }
 }

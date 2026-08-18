@@ -11,6 +11,9 @@ public class Vec3RealCoordsMixin {
 
     @Unique
     private static double farlands$real(int v) {
+        if (com.farlands.g1.util.FarProjection.isEpochActive()) {
+            return (double) v;
+        }
         return com.farlands.g1.util.FarProjection.unwrapX(v);
     }
 

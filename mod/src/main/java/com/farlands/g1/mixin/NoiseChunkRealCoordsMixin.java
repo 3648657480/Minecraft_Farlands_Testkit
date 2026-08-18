@@ -26,7 +26,11 @@ public abstract class NoiseChunkRealCoordsMixin {
     @Shadow private int inCellZ;
 
     public double getBlockXDouble() {
-        return FarProjection.unwrapX(cellStartBlockX + inCellX);
+        int v = cellStartBlockX + inCellX;
+        if (FarProjection.isEpochActive()) {
+            return FarProjection.realBlockX(v);
+        }
+        return FarProjection.unwrapX(v);
     }
 
     public double getBlockYDouble() {
@@ -34,6 +38,10 @@ public abstract class NoiseChunkRealCoordsMixin {
     }
 
     public double getBlockZDouble() {
-        return FarProjection.unwrapZ(cellStartBlockZ + inCellZ);
+        int v = cellStartBlockZ + inCellZ;
+        if (FarProjection.isEpochActive()) {
+            return FarProjection.realBlockZ(v);
+        }
+        return FarProjection.unwrapZ(v);
     }
 }
