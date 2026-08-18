@@ -5,7 +5,7 @@ import net.fabricmc.api.ModInitializer;
 
 public class G1Mod implements ModInitializer {
     public void onInitialize() {
-        System.out.println("[FarLands-G1] patched client support active");
+        System.out.println("[FarLands-G1] v2.0 signed-domain build (guard + signed sections)");
         Watchdog.start();
     }
 }

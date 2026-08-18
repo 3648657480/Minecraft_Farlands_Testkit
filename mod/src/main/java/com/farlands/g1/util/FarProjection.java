@@ -40,14 +40,19 @@ public final class FarProjection {
     /**
      * Origin-aware unwrap: when a generation origin is set, interpret the
      * wrapped value as the coordinate nearest to the origin (preserving the
-     * sign of both half-axes); otherwise fall back to the unsigned view.
+     * sign of both half-axes); otherwise return the signed value unchanged.
+     *
+     * <p>The unsigned fallback was removed at the 2^31 milestone: negative
+     * coordinates are valid ints there, and the unsigned reinterpretation
+     * mirrored the negative half-axis onto the positive one (rendering,
+     * collision). Unsigned handling belongs to the E line (beyond 2^31).</p>
      */
     public static double unwrapX(int v) {
         Long origin = ORIGIN_X.get();
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
             return (double) (origin + (v - (int) (long) origin));
         }
-        return v < WRAP_BAND ? (double) Integer.toUnsignedLong(v) : (double) v;
+        return (double) v;
     }
 
     public static double unwrapZ(int v) {
@@ -55,12 +60,12 @@ public final class FarProjection {
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
             return (double) (origin + (v - (int) (long) origin));
         }
-        return v < WRAP_BAND ? (double) Integer.toUnsignedLong(v) : (double) v;
+        return (double) v;
     }
 
-    /** Real (unsigned, continuous) block coordinate as a double. */
+    /** Real (signed, continuous) block coordinate as a double. */
     public static double blockReal(int block) {
-        return block < WRAP_BAND ? (double) Integer.toUnsignedLong(block) : (double) block;
+        return (double) block;
     }
 
     /** Real block coordinate of a long-domain value. */

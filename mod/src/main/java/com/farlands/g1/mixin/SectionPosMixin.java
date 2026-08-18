@@ -50,8 +50,9 @@ public class SectionPosMixin {
 
     @Overwrite
     public static int blockToSectionCoord(int blockCoord) {
-        if (blockCoord > -100000000 && blockCoord < 100000000) return blockCoord >> 4;
-        return Integer.divideUnsigned(blockCoord, 16);
+        // 2^31 里程碑：区块坐标在整个 int 范围内都有符号合法，
+        // unsigned 除法会把负半轴映射到正半轴（镜像 + 无碰撞）。
+        return blockCoord >> 4;
     }
 
     @Overwrite
