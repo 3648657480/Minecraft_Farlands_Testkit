@@ -51,6 +51,8 @@ public abstract class MinecraftServerTestGenMixin {
                     }
                 }
                 sb.append(" sections=").append(nonEmpty);
+                sb.append(" surfWG=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, 8, 8));
+                sb.append(" floorWG=").append(chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, 8, 8));
                 sb.append(" b(8,60,8)=").append(chunk.getBlockState(
                     new net.minecraft.core.BlockPos(cx * 16 + 8, 60, cz * 16 + 8)));
                 sb.append(" b(8,64,8)=").append(chunk.getBlockState(

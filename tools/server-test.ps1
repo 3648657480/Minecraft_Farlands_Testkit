@@ -10,6 +10,7 @@ param(
 $root = "C:\Project-G1"
 $log = "C:\Users\EASON\AppData\Local\Temp\opencode\server-$Tag.log"
 Remove-Item $log -ErrorAction SilentlyContinue
+Remove-Item "$root\mod\run\world" -Recurse -Force -ErrorAction SilentlyContinue
 
 $cmd = "cd /d $root && .\gradlew.bat -Dfarlands.wide=$Wide -Dfarlands.continuity=$Continuity -Dfarlands.epoch=$Epoch -Dfarlands.testgen=$TestGen :mod:runServer --no-daemon -q > `"$log`" 2>&1"
 $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $cmd" -WindowStyle Hidden -PassThru

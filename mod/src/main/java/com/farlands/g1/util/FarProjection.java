@@ -187,23 +187,23 @@ public final class FarProjection {
      * collision). Unsigned handling belongs to the E line (beyond 2^31).</p>
      */
     public static double unwrapX(int v) {
+        if (isEpochActive()) {
+            return (double) epochBlockX + (double) v;
+        }
         Long origin = ORIGIN_X.get();
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
             return (double) (origin + (v - (int) (long) origin));
-        }
-        if (isEpochActive()) {
-            return (double) epochBlockX + (double) v;
         }
         return (double) v;
     }
 
     public static double unwrapZ(int v) {
+        if (isEpochActive()) {
+            return (double) epochBlockZ + (double) v;
+        }
         Long origin = ORIGIN_Z.get();
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
             return (double) (origin + (v - (int) (long) origin));
-        }
-        if (isEpochActive()) {
-            return (double) epochBlockZ + (double) v;
         }
         return (double) v;
     }

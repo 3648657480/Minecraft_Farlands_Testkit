@@ -26,6 +26,7 @@
         "ChunkPosMixin",
         "MinecraftServerMixin",
         "MinecraftServerTestGenMixin",
+        "SurfaceSystemProbeMixin",
         "LayerLightSectionStorageMixin",
         "AquiferIndexMixin",
         "NoiseChunkMixin",
