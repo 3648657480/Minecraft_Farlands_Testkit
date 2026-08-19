@@ -25,6 +25,7 @@
         "EntitySectionStorageMixin",
         "ChunkPosMixin",
         "MinecraftServerMixin",
+        "MinecraftServerTestGenMixin",
         "LayerLightSectionStorageMixin",
         "AquiferIndexMixin",
         "NoiseChunkMixin",
