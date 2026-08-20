@@ -27,6 +27,16 @@ loom {
             if (System.getProperty('farlands.testgen') != null) {
                 property 'farlands.testgen', System.getProperty('farlands.testgen')
             }
+            if (System.getProperty('farlands.spawnset') != null) {
+                property 'farlands.spawnset', System.getProperty('farlands.spawnset')
+            }
+        }
+        client {
+            if (System.getProperty('farlands.testgen') != null) {
+                property 'farlands.testgen', System.getProperty('farlands.testgen')
+                programArg '--quickPlaySingleplayer'
+                programArg 'Test World'
+            }
         }
     }
 }

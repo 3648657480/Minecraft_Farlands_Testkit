@@ -47,22 +47,18 @@ public final class WorldGenRegionEpochPatch implements ClassPatch {
         }
 
         InsnList il = new InsnList();
-        // centerX into local 5
+        // Inline form (no extra locals): the vanilla getChunk uses local
+        // slots 5+ for its own values, and a stored center clobbered them
+        // (world-entry generation crash at the spawn even with the epoch
+        // dormant). Read the center straight onto the stack instead.
+        il.add(new VarInsnNode(Opcodes.ILOAD, 1));
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));
         il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "centerChunkX", "I"));
-        il.add(new VarInsnNode(Opcodes.ISTORE, 5));
-        // x = epochTranslatedChunkX(x, centerX)
-        il.add(new VarInsnNode(Opcodes.ILOAD, 1));
-        il.add(new VarInsnNode(Opcodes.ILOAD, 5));
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, PROJECTION, "epochTranslatedChunkX", "(II)I", false));
         il.add(new VarInsnNode(Opcodes.ISTORE, 1));
-        // centerZ into local 6
+        il.add(new VarInsnNode(Opcodes.ILOAD, 2));
         il.add(new VarInsnNode(Opcodes.ALOAD, 0));
         il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "centerChunkZ", "I"));
-        il.add(new VarInsnNode(Opcodes.ISTORE, 6));
-        // z = epochTranslatedChunkZ(z, centerZ)
-        il.add(new VarInsnNode(Opcodes.ILOAD, 2));
-        il.add(new VarInsnNode(Opcodes.ILOAD, 6));
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, PROJECTION, "epochTranslatedChunkZ", "(II)I", false));
         il.add(new VarInsnNode(Opcodes.ISTORE, 2));
         m.instructions.insert(il);

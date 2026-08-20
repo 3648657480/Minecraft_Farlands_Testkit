@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ChunkMapGenRateLimitMixin {
 
     @Unique
-    private static final int MAX_PER_RUN = 4;
+    private static final int MAX_PER_RUN = Integer.MAX_VALUE;
 
     @Shadow
     @Final

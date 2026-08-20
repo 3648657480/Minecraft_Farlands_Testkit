@@ -29,6 +29,18 @@ public final class FarProjection {
     private static final ThreadLocal<Long> ORIGIN_Z = new ThreadLocal<>();
 
     /**
+     * Freezes the coordinate domain at chunk construction: true when the
+     * chunk's cells are epoch-relative. Chunks created before the epoch
+     * engaged (spawn area at world load) keep the real domain even after
+     * the epoch flips mid-generation.
+     */
+    private static final ThreadLocal<Boolean> GENERATION_EPOCH_CELLS = new ThreadLocal<>();
+
+    public static void setGenerationEpochCells(boolean epochCells) {
+        GENERATION_EPOCH_CELLS.set(epochCells);
+    }
+
+    /**
      * E line: the epoch origin in REAL block coordinates. Every int domain
      * (chunk, section, block, generation cell) is expressed relative to it,
      * so int math never overflows; real = epoch + local. Set once per world
@@ -48,8 +60,16 @@ public final class FarProjection {
         epochBlockZ = epochZ;
     }
 
+    /**
+     * The epoch is only ACTIVE when it is genuinely far away. The client
+     * packet handler re-centers the epoch on every chunk-cache-center
+     * packet, including the spawn (tiny, e.g. 128 blocks) - treating that
+     * as active shifted the whole entity domain at the spawn (AABB
+     * explosion, chunk chaos). Tiny epochs are semantically vanilla and
+     * must stay dormant.
+     */
     public static boolean isEpochActive() {
-        return epochBlockX != 0L || epochBlockZ != 0L;
+        return Math.abs(epochBlockX) > 100_000_000L || Math.abs(epochBlockZ) > 100_000_000L;
     }
 
     public static long epochBlockX() {
@@ -92,18 +112,23 @@ public final class FarProjection {
 
     /**
      * Center-based translation for the WorldGenRegion boundary: translate
-     * the request by the epoch delta only if that moves it closer to the
-     * generating chunk's real position. Local generation queries get
-     * translated (they sit near local zero, far from the real center);
-     * real-domain queries (structure references) stay put. Unlike a
-     * magnitude gate, this also handles chunks whose local coordinates are
-     * extreme (spawn-area chunks when the epoch is far away).
+     * the request by +-the epoch delta, whichever moves it closer to the
+     * generating chunk's real position. Local generation queries stay put;
+     * real-domain queries (carvers, structure lookahead, world-spawn-area
+     * remnants) get rebased onto the region's local domain. Ties prefer
+     * the identity.
      */
     public static int epochTranslatedChunkX(int x, int centerX) {
         if (!isEpochActive()) return x;
-        int nx = x + epochChunkDeltaX();
-        if (Math.abs((long) nx - centerX) < Math.abs((long) x - centerX)) {
-            return nx;
+        long delta = epochChunkDeltaX();
+        long dId = Math.abs((long) x - centerX);
+        long dPlus = Math.abs((long) x + delta - centerX);
+        long dMinus = Math.abs((long) x - delta - centerX);
+        if (dPlus < dId && dPlus <= dMinus) {
+            return (int) (x + delta);
+        }
+        if (dMinus < dId) {
+            return (int) (x - delta);
         }
         return x;
     }
@@ -111,9 +136,15 @@ public final class FarProjection {
     /** Center-based translation for the WorldGenRegion boundary (Z axis). */
     public static int epochTranslatedChunkZ(int z, int centerZ) {
         if (!isEpochActive()) return z;
-        int nz = z + epochChunkDeltaZ();
-        if (Math.abs((long) nz - centerZ) < Math.abs((long) z - centerZ)) {
-            return nz;
+        long delta = epochChunkDeltaZ();
+        long dId = Math.abs((long) z - centerZ);
+        long dPlus = Math.abs((long) z + delta - centerZ);
+        long dMinus = Math.abs((long) z - delta - centerZ);
+        if (dPlus < dId && dPlus <= dMinus) {
+            return (int) (z + delta);
+        }
+        if (dMinus < dId) {
+            return (int) (z - delta);
         }
         return z;
     }
@@ -137,11 +168,17 @@ public final class FarProjection {
 
     /** Epoch-relative min block X of a real chunk coordinate. */
     public static int epochMinBlockX(long realChunk) {
+        if (!isEpochActive()) {
+            return (int) (realChunk << 4);
+        }
         return (int) ((realChunk - (epochBlockX >> 4)) << 4);
     }
 
     /** Epoch-relative min block Z of a real chunk coordinate. */
     public static int epochMinBlockZ(long realChunk) {
+        if (!isEpochActive()) {
+            return (int) (realChunk << 4);
+        }
         return (int) ((realChunk - (epochBlockZ >> 4)) << 4);
     }
 
@@ -157,11 +194,17 @@ public final class FarProjection {
 
     /** Epoch-relative chunk coordinate of a real chunk coordinate. */
     public static int epochChunkX(long realChunk) {
+        if (!isEpochActive()) {
+            return (int) realChunk;
+        }
         return (int) (realChunk - (epochBlockX >> 4));
     }
 
     /** Epoch-relative chunk coordinate of a real chunk coordinate. */
     public static int epochChunkZ(long realChunk) {
+        if (!isEpochActive()) {
+            return (int) realChunk;
+        }
         return (int) (realChunk - (epochBlockZ >> 4));
     }
 
@@ -187,23 +230,31 @@ public final class FarProjection {
      * collision). Unsigned handling belongs to the E line (beyond 2^31).</p>
      */
     public static double unwrapX(int v) {
-        if (isEpochActive()) {
+        Boolean epochCells = GENERATION_EPOCH_CELLS.get();
+        if (epochCells != null && epochCells && isEpochActive()) {
             return (double) epochBlockX + (double) v;
         }
         Long origin = ORIGIN_X.get();
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
             return (double) (origin + (v - (int) (long) origin));
         }
+        if (isEpochActive()) {
+            return (double) epochBlockX + (double) v;
+        }
         return (double) v;
     }
 
     public static double unwrapZ(int v) {
-        if (isEpochActive()) {
+        Boolean epochCells = GENERATION_EPOCH_CELLS.get();
+        if (epochCells != null && epochCells && isEpochActive()) {
             return (double) epochBlockZ + (double) v;
         }
         Long origin = ORIGIN_Z.get();
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
             return (double) (origin + (v - (int) (long) origin));
+        }
+        if (isEpochActive()) {
+            return (double) epochBlockZ + (double) v;
         }
         return (double) v;
     }

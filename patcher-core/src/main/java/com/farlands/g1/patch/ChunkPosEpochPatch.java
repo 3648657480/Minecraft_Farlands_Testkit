@@ -3,6 +3,7 @@ package com.farlands.g1.patch;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -41,7 +42,8 @@ public final class ChunkPosEpochPatch implements ClassPatch {
         if (node.fields.stream().noneMatch(f -> "x".equals(f.name) && "J".equals(f.desc))) {
             return original; // requires the B-line widening
         }
-        if (node.fields.stream().noneMatch(f -> "farlands$epoch".equals(f.name))) {
+        if (TARGET.equals(node.name)
+            && node.fields.stream().noneMatch(f -> "farlands$epoch".equals(f.name))) {
             node.fields.add(new org.objectweb.asm.tree.FieldNode(
                 Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
                 "farlands$epoch", "I", null, 1));

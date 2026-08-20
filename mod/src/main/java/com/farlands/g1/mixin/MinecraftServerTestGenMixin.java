@@ -27,12 +27,50 @@ public abstract class MinecraftServerTestGenMixin {
 
     @Inject(method = "tickServer", at = @At("HEAD"))
     private void farlands$testgen(BooleanSupplier hasTime, CallbackInfo ci) {
-        if (farlands$testgenDone) return;
+        if (!farlands$testgenDone) {
+            farlands$testgenDone = true;
+            runTestGen((MinecraftServer) (Object) this);
+        }
+        if (!farlands$spawnDone) {
+            farlands$spawnDone = true;
+            runSpawnSet((MinecraftServer) (Object) this);
+        }
+    }
+
+    @Unique
+    private static boolean farlands$spawnDone = false;
+
+    @Unique
+    private static void runSpawnSet(MinecraftServer self) {
+        String spec = System.getProperty("farlands.spawnset");
+        if (spec == null || spec.isEmpty()) return;
+        ServerLevel level = self.overworld();
+        try {
+            String[] parts = spec.split(",");
+            long px = Long.parseLong(parts[0].trim());
+            int py = Integer.parseInt(parts[1].trim());
+            long pz = Long.parseLong(parts[2].trim());
+            long epochX = (px >> 4) << 4;
+            long epochZ = (pz >> 4) << 4;
+            com.farlands.g1.util.FarProjection.setEpoch(epochX, epochZ);
+            int localX = (int) (px - epochX);
+            int localZ = (int) (pz - epochZ);
+            level.setRespawnData(new net.minecraft.world.level.storage.LevelData.RespawnData(
+                net.minecraft.core.GlobalPos.of(
+                    net.minecraft.world.level.Level.OVERWORLD,
+                    new net.minecraft.core.BlockPos(localX, py, localZ)), 0.0f, 0.0f));
+            System.out.println("[FarLands-Test] spawn set: real=(" + px + "," + py + "," + pz
+                + ") epoch=(" + epochX + "," + epochZ + ") local=(" + localX + "," + localZ + ")");
+        } catch (Throwable t) {
+            System.out.println("[FarLands-Test] spawn set FAILED: " + t);
+        }
+        System.out.flush();
+    }
+
+    @Unique
+    private static void runTestGen(MinecraftServer self) {
         String spec = System.getProperty("farlands.testgen");
         if (spec == null || spec.isEmpty()) return;
-        farlands$testgenDone = true;
-
-        MinecraftServer self = (MinecraftServer) (Object) this;
         ServerLevel level = self.overworld();
         try {
             String[] parts = spec.split(",");
