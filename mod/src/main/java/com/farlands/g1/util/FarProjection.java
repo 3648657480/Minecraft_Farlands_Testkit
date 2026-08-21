@@ -61,15 +61,16 @@ public final class FarProjection {
     }
 
     /**
-     * The epoch is only ACTIVE when it is genuinely far away. The client
-     * packet handler re-centers the epoch on every chunk-cache-center
-     * packet, including the spawn (tiny, e.g. 128 blocks) - treating that
-     * as active shifted the whole entity domain at the spawn (AABB
-     * explosion, chunk chaos). Tiny epochs are semantically vanilla and
-     * must stay dormant.
+     * The epoch is only ACTIVE when the real coordinates genuinely exceed
+     * the int block domain. Within ±2^31-1 everything runs on the proven
+     * J3 path (no epoch at all); the epoch engages only beyond the int
+     * boundary. The client packet handler re-centers the epoch on every
+     * chunk-cache-center packet, including the spawn (tiny, e.g. 128
+     * blocks) - treating that as active shifted the whole entity domain at
+     * the spawn (AABB explosion, chunk chaos).
      */
     public static boolean isEpochActive() {
-        return Math.abs(epochBlockX) > 100_000_000L || Math.abs(epochBlockZ) > 100_000_000L;
+        return Math.abs(epochBlockX) > 2_000_000_000L || Math.abs(epochBlockZ) > 2_000_000_000L;
     }
 
     public static long epochBlockX() {
