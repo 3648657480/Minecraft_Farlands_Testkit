@@ -12,7 +12,6 @@
         "LevelSetBlockMixin",
         "PlayerMixin",
         "ServerPlayerMixin",
-        "ServerPlayerEpochMixin",
         "ServerPlayerInteractMixin",
         "ServerGamePacketListenerImplMixin",
         "TeleportCommandMixin",
@@ -25,6 +24,7 @@
         "EntitySectionStorageMixin",
         "ChunkPosMixin",
         "MinecraftServerMixin",
+        "MinecraftServerEpochMixin",
         "MinecraftServerTestGenMixin",
         "SurfaceSystemProbeMixin",
         "LayerLightSectionStorageMixin",
@@ -52,8 +52,7 @@
         "RenderSectionVertexSortingMixin",
         "GlobalSettingsUniformGrabMixin",
         "LevelRendererCamWrapMixin",
-        "ParticlePosMixin",
-        "ClientPacketListenerEpochMixin"
+        "ParticlePosMixin"
     ],
     "injectors": { "defaultRequire": 1 }
 }

@@ -6,23 +6,22 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
- * E line: makes {@code ChunkPos} block-boundary accessors epoch-relative.
+ * E line: makes {@code ChunkPos}'s int view epoch-relative.
  *
- * <p>Runs after {@link ChunkPosPatch} (B line, long fields). Only the
- * block-domain accessors ({@code getMinBlockX/Z}, {@code getMaxBlockX/Z})
- * become relative to the epoch origin via
- * {@code FarProjection.epochMinBlockX/Z}; the chunk storage domain
- * ({@code x()/z()/asLong()}) stays real - int chunk coordinates hold up to
- * +/-2^35 blocks, far beyond the +/-2^31 block boundary this milestone
- * crosses. The noise pipeline then operates on small local ints whose real
- * value is {@code epoch + local}. A {@code farlands$epoch} marker field
- * lets the mod detect this jar state.</p>
+ * <p>Runs after {@link ChunkPosPatch} (B line, long fields). Every
+ * {@code GETFIELD x/z:J} whose value is narrowed with {@code L2I} becomes
+ * an epoch-relative conversion via {@code FarProjection.epochChunkX/Z}.
+ * This covers the accessors {@code x()/z()}, {@code asLong()},
+ * {@code hashCode()}, {@code equals()} and the block-boundary accessors, so
+ * the entire chunk storage domain (ChunkMap, client cache, structure
+ * managers, WorldGenRegion centers) keys on one consistent local domain.
+ * The wide {@code (JJ)} constructor and {@code xLong()/zLong()} keep the
+ * real domain for generation. A {@code farlands$epoch} marker field lets
+ * the mod detect this jar state.</p>
  */
 public final class ChunkPosEpochPatch implements ClassPatch {
 
@@ -31,7 +30,7 @@ public final class ChunkPosEpochPatch implements ClassPatch {
 
     @Override
     public boolean matches(String internalName) {
-        return TARGET.equals(internalName);
+        return TARGET.equals(internalName) || internalName.startsWith(TARGET + "$");
     }
 
     @Override
@@ -50,9 +49,25 @@ public final class ChunkPosEpochPatch implements ClassPatch {
         }
 
         boolean changed = false;
-        for (String axis : new String[]{"X", "Z"}) {
-            changed |= rewrite(node, "getMinBlock" + axis, false, axis);
-            changed |= rewrite(node, "getMaxBlock" + axis, true, axis);
+        for (MethodNode m : node.methods) {
+            for (AbstractInsnNode insn : m.instructions) {
+                if (!(insn instanceof FieldInsnNode fi) || fi.getOpcode() != Opcodes.GETFIELD
+                    || !"J".equals(fi.desc) || !TARGET.equals(fi.owner)) {
+                    continue;
+                }
+                boolean xAxis = "x".equals(fi.name);
+                if (!xAxis && !"z".equals(fi.name)) {
+                    continue;
+                }
+                AbstractInsnNode next = insn.getNext();
+                if (next != null && next.getOpcode() == Opcodes.L2I) {
+                    MethodInsnNode conv = new MethodInsnNode(Opcodes.INVOKESTATIC, PROJECTION,
+                        xAxis ? "epochChunkX" : "epochChunkZ", "(J)I", false);
+                    m.instructions.insert(insn, conv);
+                    m.instructions.remove(next);
+                    changed = true;
+                }
+            }
         }
         if (!changed) {
             return original;
@@ -63,36 +78,8 @@ public final class ChunkPosEpochPatch implements ClassPatch {
         return cw.toByteArray();
     }
 
-    private static boolean rewrite(ClassNode node, String name, boolean plusFifteen, String axis) {
-        MethodNode m = null;
-        for (MethodNode cand : node.methods) {
-            if (name.equals(cand.name) && "()I".equals(cand.desc)) {
-                m = cand;
-                break;
-            }
-        }
-        if (m == null) {
-            throw new IllegalStateException(TARGET + "#" + name + " not found");
-        }
-        InsnList il = new InsnList();
-        il.add(new org.objectweb.asm.tree.VarInsnNode(Opcodes.ALOAD, 0));
-        il.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, axis.toLowerCase(), "J"));
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, PROJECTION,
-            "epochMinBlock" + axis, "(J)I", false));
-        if (plusFifteen) {
-            il.add(new org.objectweb.asm.tree.IntInsnNode(Opcodes.BIPUSH, 15));
-            il.add(new InsnNode(Opcodes.IADD));
-        }
-        il.add(new InsnNode(Opcodes.IRETURN));
-        m.instructions.clear();
-        m.localVariables = null;
-        m.tryCatchBlocks.clear();
-        m.instructions.add(il);
-        return true;
-    }
-
     @Override
     public String describe(String internalName) {
-        return "ChunkPosEpochPatch (block accessors epoch-relative)";
+        return "ChunkPosEpochPatch (int view epoch-relative)";
     }
 }

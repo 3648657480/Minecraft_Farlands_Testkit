@@ -61,16 +61,14 @@ public final class FarProjection {
     }
 
     /**
-     * The epoch is only ACTIVE when the real coordinates genuinely exceed
-     * the int block domain. Within ±2^31-1 everything runs on the proven
-     * J3 path (no epoch at all); the epoch engages only beyond the int
-     * boundary. The client packet handler re-centers the epoch on every
-     * chunk-cache-center packet, including the spawn (tiny, e.g. 128
-     * blocks) - treating that as active shifted the whole entity domain at
-     * the spawn (AABB explosion, chunk chaos).
+     * The epoch is ACTIVE whenever it has been set (the fixed-epoch design:
+     * set once from the world's respawn point at load, constant for the
+     * session). Every int domain runs local when the jar supports the epoch;
+     * on jars without the epoch patches the epoch stays 0 and everything is
+     * vanilla.
      */
     public static boolean isEpochActive() {
-        return Math.abs(epochBlockX) > 2_000_000_000L || Math.abs(epochBlockZ) > 2_000_000_000L;
+        return epochBlockX != 0L || epochBlockZ != 0L;
     }
 
     public static long epochBlockX() {
