@@ -1,0 +1,6 @@
+[15:45:38] [main/INFO]: [STDOUT]:   level.dat root keys: [Data]
+[15:45:38] [main/INFO]: [STDOUT]:   level.dat Data keys: [difficulty_settings, Time, GameType, ServerBrands, version, LastPlayed, spawn, Version, LevelName, initialized, WasModded, DataVersion, allowCommands, DataPacks]
+[15:45:38] [main/INFO]: [STDOUT]:   level.dat Player present: false
+[15:45:38] [main/INFO]: [STDOUT]:   level.dat spawn before: {dimension:"minecraft:overworld",pitch:0.0f,pos:[I;96,136,-32],yaw:0.0f}
+[15:45:38] [main/INFO]: [STDOUT]:   level.dat respawn shifted
+[15:45:38] [main/INFO]: [STDOUT]: translated 543 chunks (+1000,0 chunks)

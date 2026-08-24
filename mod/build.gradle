@@ -58,3 +58,21 @@ processResources {
                 "loader_version": project.loader_version
     }
 }
+
+// E2: offline save translator (shift all chunks by a chunk delta).
+// Usage: gradlew :mod:translateSave -Pworld=<path> -Pdx=<chunks> -Pdz=<chunks>
+sourceSets {
+    main {
+        java {
+            srcDir '../tools/chunk-translator/src'
+        }
+    }
+}
+tasks.register('translateSave', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'farlands.translator.Main'
+    if (project.hasProperty('world')) args project.property('world')
+    if (project.hasProperty('dx')) args project.property('dx')
+    if (project.hasProperty('dz')) args project.property('dz')
+    workingDir = rootProject.projectDir
+}

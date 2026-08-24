@@ -24,7 +24,6 @@
         "EntitySectionStorageMixin",
         "ChunkPosMixin",
         "MinecraftServerMixin",
-        "MinecraftServerEpochMixin",
         "MinecraftServerTestGenMixin",
         "SurfaceSystemProbeMixin",
         "LayerLightSectionStorageMixin",
