@@ -47,9 +47,16 @@ public final class Main {
             System.out.println("usage: Main <world> <dx> <dz>");
             return;
         }
-        Path world = Path.of(args[0]);
-        int dx = Integer.parseInt(args[1]);
-        int dz = Integer.parseInt(args[2]);
+        translate(Path.of(args[0]), Integer.parseInt(args[1]), Integer.parseInt(args[2]));
+    }
+
+    /**
+     * E3: in-process API for the auto-relocate flow. Shifts every chunk
+     * (region + entities), the level.dat respawn point and the player
+     * positions by a chunk delta. Returns the number of chunks moved.
+     * Call after the world files have been released (server halted).
+     */
+    public static int translate(Path world, int dx, int dz) throws Exception {
         Path overworld = world.resolve("dimensions/minecraft/overworld");
 
         int shifted = 0;
@@ -58,6 +65,7 @@ public final class Main {
         shiftLevelDat(world, dx, dz);
         shiftPlayerData(world, dx, dz);
         System.out.println("translated " + shifted + " chunks (+" + dx + "," + dz + " chunks)");
+        return shifted;
     }
 
     private static int translateRegionDir(Path dir, int dx, int dz) throws Exception {
@@ -196,8 +204,10 @@ public final class Main {
     }
 
     private static void shiftPlayerData(Path world, int dx, int dz) throws Exception {
-        Path players = world.resolve("players");
+        // 26.2: player data lives in players/data (PLAYER_DATA_DIR), not players/
+        Path players = world.resolve("players/data");
         if (!Files.isDirectory(players)) {
+            System.out.println("  player data dir missing: " + players);
             return;
         }
         for (Path f : Files.list(players).toList()) {

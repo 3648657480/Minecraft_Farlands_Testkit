@@ -51,7 +51,10 @@
         "RenderSectionVertexSortingMixin",
         "GlobalSettingsUniformGrabMixin",
         "LevelRendererCamWrapMixin",
-        "ParticlePosMixin"
+        "ParticlePosMixin",
+        "MinecraftServerRelocateMixin",
+        "MinecraftClientRelocateMixin",
+        "MinecraftServerAccessor"
     ],
     "injectors": { "defaultRequire": 1 }
 }
