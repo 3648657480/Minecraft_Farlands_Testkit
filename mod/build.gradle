@@ -17,6 +17,7 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.layered { mappings file(rootProject.file('mappings.tiny')) }
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    compileOnly "com.mojang:brigadier:1.3.10"
 }
 
 loom {
