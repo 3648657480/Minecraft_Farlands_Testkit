@@ -1,0 +1,19 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.farlands.g1.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [
+        "PlayerMixin",
+        "PlayerListMixin",
+        "ServerPlayerMixin",
+        "ServerPlayerInteractMixin",
+        "ServerGamePacketListenerImplMixin",
+        "TeleportCommandMixin",
+        "EntityMixin",
+        "EntitySectionStorageMixin",
+        "EntityFluidInteractionFarGuardMixin",
+        "ChunkMapPlayerCloseMixin"
+    ],
+    "injectors": { "defaultRequire": 1 }
+}

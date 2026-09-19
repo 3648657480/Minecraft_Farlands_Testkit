@@ -167,27 +167,19 @@ public final class BlockCollisionsPatch implements ClassPatch {
     }
 
     private static MethodInsnNode realXCall() {
-        return new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection", "unwrapX", "(I)D", false);
+        return new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection", "collisionX", "(I)D", false);
     }
 
     private static MethodInsnNode realZCall() {
-        return new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection", "unwrapZ", "(I)D", false);
+        return new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection", "collisionZ", "(I)D", false);
     }
 
     private static MethodNode realMethod() {
         MethodNode mn = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "real", "(I)D", null, null);
-        LabelNode plain = new LabelNode();
         InsnList il = mn.instructions;
         il.add(new VarInsnNode(Opcodes.ILOAD, 0));
-        il.add(new LdcInsnNode(-100_000_000));
-        il.add(new JumpInsnNode(Opcodes.IF_ICMPGE, plain));
-        il.add(new VarInsnNode(Opcodes.ILOAD, 0));
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "toUnsignedLong", "(I)J", false));
-        il.add(new InsnNode(Opcodes.L2D));
-        il.add(new InsnNode(Opcodes.DRETURN));
-        il.add(plain);
-        il.add(new VarInsnNode(Opcodes.ILOAD, 0));
-        il.add(new InsnNode(Opcodes.I2D));
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection",
+            "collisionX", "(I)D", false));
         il.add(new InsnNode(Opcodes.DRETURN));
         return mn;
     }

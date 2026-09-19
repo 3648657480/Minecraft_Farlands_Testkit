@@ -1,0 +1,12 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.farlands.g1.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [
+        "MinecraftServerMixin",
+        "BufferBuilderGrowMixin",
+        "ChunkMapGenRateLimitMixin"
+    ],
+    "injectors": { "defaultRequire": 1 }
+}

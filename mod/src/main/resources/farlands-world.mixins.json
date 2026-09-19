@@ -1,0 +1,21 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.farlands.g1.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [
+        "LevelMixin",
+        "LevelSetBlockMixin",
+        "ServerLevelSendMixin",
+        "ServerTickMixin",
+        "LayerLightSectionStorageMixin",
+        "AquiferIndexMixin",
+        "NoiseChunkMixin",
+        "NoiseChunkRealCoordsMixin",
+        "FunctionContextMixin",
+        "ChunkGeneratorMixin",
+        "TreeFeatureMixin",
+        "MineshaftSkipMixin"
+    ],
+    "injectors": { "defaultRequire": 1 }
+}

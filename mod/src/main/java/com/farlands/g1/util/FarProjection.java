@@ -45,9 +45,12 @@ public final class FarProjection {
      * (chunk, section, block, generation cell) is expressed relative to it,
      * so int math never overflows; real = epoch + local. Set once per world
      * join / teleport to the player's chunk. 0 = vanilla behavior.
+     *
+     * <p>Stored as double so the extreme target (up to 1e306) is
+     * representable; the engine int domains only ever see the local part.</p>
      */
-    private static volatile long epochBlockX;
-    private static volatile long epochBlockZ;
+    private static volatile double epochBlockX;
+    private static volatile double epochBlockZ;
 
     private FarProjection() {
     }
@@ -55,6 +58,14 @@ public final class FarProjection {
     public static void setEpoch(long epochX, long epochZ) {
         if (!epochSupported()) {
             return; // 非 epoch 客户端 jar（J1-J3）：epoch 必须保持休眠
+        }
+        epochBlockX = (double) epochX;
+        epochBlockZ = (double) epochZ;
+    }
+
+    public static void setEpoch(double epochX, double epochZ) {
+        if (!epochSupported()) {
+            return;
         }
         epochBlockX = epochX;
         epochBlockZ = epochZ;
@@ -68,25 +79,25 @@ public final class FarProjection {
      * vanilla.
      */
     public static boolean isEpochActive() {
-        return epochBlockX != 0L || epochBlockZ != 0L;
+        return epochBlockX != 0.0 || epochBlockZ != 0.0;
     }
 
-    public static long epochBlockX() {
+    public static double epochBlockX() {
         return epochBlockX;
     }
 
-    public static long epochBlockZ() {
+    public static double epochBlockZ() {
         return epochBlockZ;
     }
 
     /** Epoch chunk delta: real chunk = local + this. */
     public static int epochChunkDeltaX() {
-        return (int) (epochBlockX >> 4);
+        return (int) (epochBlockX / 16.0);
     }
 
     /** Epoch chunk delta: real chunk = local + this. */
     public static int epochChunkDeltaZ() {
-        return (int) (epochBlockZ >> 4);
+        return (int) (epochBlockZ / 16.0);
     }
 
     /** Real chunk coordinate of an epoch-relative chunk coordinate; gated
@@ -94,7 +105,7 @@ public final class FarProjection {
      *  through untranslated. */
     public static int epochRealChunkX(int local) {
         if (isEpochActive() && Math.abs(local) < 1_000_000) {
-            return (int) (epochBlockX >> 4) + local;
+            return (int) (epochBlockX / 16.0) + local;
         }
         return local;
     }
@@ -104,7 +115,7 @@ public final class FarProjection {
      *  through untranslated. */
     public static int epochRealChunkZ(int local) {
         if (isEpochActive() && Math.abs(local) < 1_000_000) {
-            return (int) (epochBlockZ >> 4) + local;
+            return (int) (epochBlockZ / 16.0) + local;
         }
         return local;
     }
@@ -170,7 +181,7 @@ public final class FarProjection {
         if (!isEpochActive()) {
             return (int) (realChunk << 4);
         }
-        return (int) ((realChunk - (epochBlockX >> 4)) << 4);
+        return (int) (((double) (realChunk << 4)) - epochBlockX);
     }
 
     /** Epoch-relative min block Z of a real chunk coordinate. */
@@ -178,17 +189,17 @@ public final class FarProjection {
         if (!isEpochActive()) {
             return (int) (realChunk << 4);
         }
-        return (int) ((realChunk - (epochBlockZ >> 4)) << 4);
+        return (int) (((double) (realChunk << 4)) - epochBlockZ);
     }
 
     /** Real block coordinate of an epoch-relative block value. */
     public static double realBlockX(int local) {
-        return (double) epochBlockX + (double) local;
+        return epochBlockX + (double) local;
     }
 
     /** Real block coordinate of an epoch-relative block value. */
     public static double realBlockZ(int local) {
-        return (double) epochBlockZ + (double) local;
+        return epochBlockZ + (double) local;
     }
 
     /** Epoch-relative chunk coordinate of a real chunk coordinate. */
@@ -196,7 +207,7 @@ public final class FarProjection {
         if (!isEpochActive()) {
             return (int) realChunk;
         }
-        return (int) (realChunk - (epochBlockX >> 4));
+        return (int) ((double) realChunk - (epochBlockX / 16.0));
     }
 
     /** Epoch-relative chunk coordinate of a real chunk coordinate. */
@@ -204,12 +215,12 @@ public final class FarProjection {
         if (!isEpochActive()) {
             return (int) realChunk;
         }
-        return (int) (realChunk - (epochBlockZ >> 4));
+        return (int) ((double) realChunk - (epochBlockZ / 16.0));
     }
 
     /** Real chunk coordinate of an epoch-relative chunk coordinate. */
     public static long realChunkX(int local) {
-        return (epochBlockX >> 4) + (long) local;
+        return (long) (epochBlockX / 16.0) + (long) local;
     }
 
     /** Called by the patched NoiseChunk.forChunk before generation starts. */
@@ -231,14 +242,14 @@ public final class FarProjection {
     public static double unwrapX(int v) {
         Boolean epochCells = GENERATION_EPOCH_CELLS.get();
         if (epochCells != null && epochCells && isEpochActive()) {
-            return (double) epochBlockX + (double) v;
+            return epochBlockX + (double) v;
         }
         Long origin = ORIGIN_X.get();
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
             return (double) (origin + (v - (int) (long) origin));
         }
         if (isEpochActive()) {
-            return (double) epochBlockX + (double) v;
+            return epochBlockX + (double) v;
         }
         return (double) v;
     }
@@ -261,6 +272,35 @@ public final class FarProjection {
     /** Real (signed, continuous) block coordinate as a double. */
     public static double blockReal(int block) {
         return (double) block;
+    }
+
+    /**
+     * Collision-domain X for the patched collision iterators (AABB.clip,
+     * BlockCollisions). The world is entirely local when the epoch is
+     * active, so collision boxes must use the local value directly - the
+     * real-coordinate unwrap (epoch + local) would move block boxes to the
+     * epoch origin and kill all collisions. Without an epoch this keeps
+     * the legacy unsigned fallback used by the J3/D-line patches.
+     */
+    public static double collisionX(int v) {
+        if (isEpochActive()) {
+            return (double) v;
+        }
+        if (v < -100_000_000) {
+            return (double) Integer.toUnsignedLong(v);
+        }
+        return (double) v;
+    }
+
+    /** Collision-domain Z; see {@link #collisionX(int)}. */
+    public static double collisionZ(int v) {
+        if (isEpochActive()) {
+            return (double) v;
+        }
+        if (v < -100_000_000) {
+            return (double) Integer.toUnsignedLong(v);
+        }
+        return (double) v;
     }
 
     /** Real block coordinate of a long-domain value. */

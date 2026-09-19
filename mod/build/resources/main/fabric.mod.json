@@ -14,5 +14,13 @@
     "entrypoints": {
         "main": ["com.farlands.g1.G1Mod"]
     },
-    "mixins": ["farlands-g1.mixins.json"]
+    "mixins": [
+        "farlands-core.mixins.json",
+        "farlands-epoch.mixins.json",
+        "farlands-world.mixins.json",
+        "farlands-entity.mixins.json",
+        "farlands-stability.mixins.json",
+        "farlands-test.mixins.json",
+        "farlands-client.mixins.json"
+    ]
 }

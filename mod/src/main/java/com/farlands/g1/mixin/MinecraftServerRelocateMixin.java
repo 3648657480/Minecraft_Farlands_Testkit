@@ -48,9 +48,18 @@ public class MinecraftServerRelocateMixin {
             long cx = (long) Math.floor(p.getX()) >> 4;
             long cz = (long) Math.floor(p.getZ()) >> 4;
             if (Math.abs(cx) > CHUNK_LIMIT || Math.abs(cz) > CHUNK_LIMIT) {
-                int dx = (int) (TARGET_CHUNK - cx);
-                int dz = (int) (TARGET_CHUNK - cz);
-                FarRelocate.pending = new FarRelocate.Request(dx, dz);
+                long dx = TARGET_CHUNK - cx;
+                long dz = TARGET_CHUNK - cz;
+                if (dx < Integer.MIN_VALUE || dx > Integer.MAX_VALUE
+                        || dz < Integer.MIN_VALUE || dz > Integer.MAX_VALUE) {
+                    System.out.println("[FarLands] player at chunk (" + cx + "," + cz
+                        + ") is outside the relocatable int range; cannot shift the world by ("
+                        + dx + "," + dz + "). Moving back within +/-2^31 is required first.");
+                    System.out.flush();
+                    lastRelocateAt = now;
+                    return;
+                }
+                FarRelocate.pending = new FarRelocate.Request((int) dx, (int) dz);
                 lastRelocateAt = now;
                 System.out.println("[FarLands] boundary reached at chunk (" + cx + "," + cz
                     + "), relocating world by (" + dx + "," + dz + ")");

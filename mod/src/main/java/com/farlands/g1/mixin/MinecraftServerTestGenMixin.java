@@ -35,6 +35,61 @@ public abstract class MinecraftServerTestGenMixin {
             farlands$spawnDone = true;
             runSpawnSet((MinecraftServer) (Object) this);
         }
+        if (!farlands$spawnSearchDone) {
+            farlands$spawnSearchDone = true;
+            runSpawnSearch((MinecraftServer) (Object) this);
+        }
+    }
+
+    @Unique
+    private static boolean farlands$spawnSearchDone = false;
+
+    /**
+     * Headless replication of the client's prepare_spawn path: calls
+     * PlayerSpawnFinder.findSpawn with the world respawn, which schedules
+     * per-chunk SPAWN_SEARCH tickets and forces generation. Crashes here
+     * reproduce the integrated-server world-entry failure without a client.
+     */
+    @Unique
+    private static void runSpawnSearch(MinecraftServer self) {
+        if (System.getProperty("farlands.testgen") == null) return;
+        try {
+            net.minecraft.server.level.ServerLevel level = self.overworld();
+            net.minecraft.core.BlockPos pos = self.getWorldData().overworldData().getRespawnData().pos();
+            System.out.println("[FarLands-Test] spawn search start respawn=(" + pos.getX()
+                + "," + pos.getY() + "," + pos.getZ() + ")");
+            System.out.flush();
+            java.util.concurrent.CompletableFuture<net.minecraft.world.phys.Vec3> f =
+                net.minecraft.server.level.PlayerSpawnFinder.findSpawn(level, pos);
+            f.whenComplete((v, t) -> {
+                if (t != null) {
+                    System.out.println("[FarLands-Test] spawn search FAILED: " + t);
+                    t.printStackTrace(System.out);
+                } else {
+                    System.out.println("[FarLands-Test] spawn search OK -> " + v);
+                    net.minecraft.world.level.ChunkPos spawnChunk =
+                        net.minecraft.world.level.ChunkPos.containing(net.minecraft.core.BlockPos.containing(v));
+                    System.out.println("[FarLands-Test] spawn ticket radius 3 (PrepareSpawnTask path) chunk="
+                        + spawnChunk.x() + "," + spawnChunk.z());
+                    level.getChunkSource().addTicketAndLoadWithRadius(
+                        net.minecraft.server.level.TicketType.PLAYER_SPAWN, spawnChunk, 3)
+                        .whenComplete((ignored2, t2) -> {
+                            if (t2 != null) {
+                                System.out.println("[FarLands-Test] spawn ticket FAILED: " + t2);
+                                t2.printStackTrace(System.out);
+                            } else {
+                                System.out.println("[FarLands-Test] spawn ticket OK (radius 3 path)");
+                            }
+                            System.out.flush();
+                        });
+                }
+                System.out.flush();
+            });
+        } catch (Throwable t) {
+            System.out.println("[FarLands-Test] spawn search setup FAILED: " + t);
+            t.printStackTrace(System.out);
+            System.out.flush();
+        }
     }
 
     @Unique
@@ -47,20 +102,19 @@ public abstract class MinecraftServerTestGenMixin {
         ServerLevel level = self.overworld();
         try {
             String[] parts = spec.split(",");
-            long px = Long.parseLong(parts[0].trim());
+            double px = Double.parseDouble(parts[0].trim());
             int py = Integer.parseInt(parts[1].trim());
-            long pz = Long.parseLong(parts[2].trim());
-            long epochX = (px >> 4) << 4;
-            long epochZ = (pz >> 4) << 4;
-            com.farlands.g1.util.FarProjection.setEpoch(epochX, epochZ);
-            int localX = (int) (px - epochX);
-            int localZ = (int) (pz - epochZ);
+            double pz = Double.parseDouble(parts[2].trim());
+            com.farlands.g1.util.FarProjection.setEpoch(px, pz);
+            int localX = (int) (px - com.farlands.g1.util.FarProjection.epochBlockX());
+            int localZ = (int) (pz - com.farlands.g1.util.FarProjection.epochBlockZ());
             level.setRespawnData(new net.minecraft.world.level.storage.LevelData.RespawnData(
                 net.minecraft.core.GlobalPos.of(
                     net.minecraft.world.level.Level.OVERWORLD,
                     new net.minecraft.core.BlockPos(localX, py, localZ)), 0.0f, 0.0f));
             System.out.println("[FarLands-Test] spawn set: real=(" + px + "," + py + "," + pz
-                + ") epoch=(" + epochX + "," + epochZ + ") local=(" + localX + "," + localZ + ")");
+                + ") epoch=(" + com.farlands.g1.util.FarProjection.epochBlockX() + ","
+                + com.farlands.g1.util.FarProjection.epochBlockZ() + ") local=(" + localX + "," + localZ + ")");
         } catch (Throwable t) {
             System.out.println("[FarLands-Test] spawn set FAILED: " + t);
         }
@@ -76,11 +130,21 @@ public abstract class MinecraftServerTestGenMixin {
             String[] parts = spec.split(",");
             int cx = Integer.parseInt(parts[0].trim());
             int cz = Integer.parseInt(parts[1].trim());
-            ChunkAccess chunk = level.getChunk(cx, cz);
+            int n = parts.length > 2 ? Integer.parseInt(parts[2].trim()) : 1;
+            long t0 = System.currentTimeMillis();
+            ChunkAccess chunk = null;
+            for (int dx = 0; dx < n; dx++) {
+                for (int dz = 0; dz < n; dz++) {
+                    chunk = level.getChunk(cx + dx, cz + dz);
+                }
+            }
+            long genMs = System.currentTimeMillis() - t0;
             int top = chunk != null ? chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 8, 8) : -999;
             StringBuilder sb = new StringBuilder();
-            sb.append("[FarLands-Test] gen OK chunk=(").append(cx).append(",").append(cz)
-                .append(") topY=").append(top);
+            sb.append("[FarLands-Test] gen OK region (").append(cx).append(",").append(cz)
+                .append(")+").append(n).append("x").append(n).append(" last=(").append(cx + n - 1)
+                .append(",").append(cz + n - 1).append(") topY=").append(top).append(" timeMs=").append(genMs);
+            System.out.println(sb);
             if (chunk != null) {
                 int nonEmpty = 0;
                 for (int i = 0; i < chunk.getSections().length; i++) {

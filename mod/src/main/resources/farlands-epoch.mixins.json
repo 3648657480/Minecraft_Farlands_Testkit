@@ -1,0 +1,16 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.farlands.g1.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [
+        "MinecraftServerEpochMixin",
+        "SetInitialSpawnEpochMixin",
+        "SpawnFinderEpochMixin",
+        "PlayerSpawnFinderEpochMixin",
+        "SpawnTicketRadiusMixin",
+        "PrepareSpawnTaskMixin",
+        "AcquireDiagMixin"
+    ],
+    "injectors": { "defaultRequire": 1 }
+}

@@ -4,6 +4,15 @@ import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
+/**
+ * Block-coordinate accessors for entities.
+ *
+ * <p>In the local-domain world (epoch active), entity positions ARE local
+ * already - the server runs entirely in the local domain, so
+ * {@code getBlockX/Z} is the position itself. No epoch subtraction (that
+ * would double-shift already-local positions, observed as mineshaft chests
+ * querying chunks at -2^31). When the epoch is inactive, vanilla identity.
+ */
 @Mixin(Entity.class)
 public class EntityMixin {
     @Overwrite
@@ -13,11 +22,7 @@ public class EntityMixin {
 
     @Overwrite
     public int getBlockX() {
-        double x = ((Entity)(Object)this).getX();
-        if (com.farlands.g1.util.FarProjection.isEpochActive()) {
-            return (int)(long)Math.floor(x - com.farlands.g1.util.FarProjection.epochBlockX());
-        }
-        return (int)(long)Math.floor(x);
+        return (int)(long)Math.floor(((Entity)(Object)this).getX());
     }
 
     @Overwrite
@@ -27,10 +32,6 @@ public class EntityMixin {
 
     @Overwrite
     public int getBlockZ() {
-        double z = ((Entity)(Object)this).getZ();
-        if (com.farlands.g1.util.FarProjection.isEpochActive()) {
-            return (int)(long)Math.floor(z - com.farlands.g1.util.FarProjection.epochBlockZ());
-        }
-        return (int)(long)Math.floor(z);
+        return (int)(long)Math.floor(((Entity)(Object)this).getZ());
     }
 }

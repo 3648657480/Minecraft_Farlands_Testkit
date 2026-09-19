@@ -1,0 +1,25 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.farlands.g1.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [
+        "ClientLevelMixin"
+    ],
+    "client": [
+        "RenderSectionRegionMixin",
+        "FrustumMixin",
+        "ViewAreaMixin",
+        "OctreeMixin",
+        "CameraMixin",
+        "RenderSectionFloatingOriginMixin",
+        "RenderSectionVertexSortingMixin",
+        "GlobalSettingsUniformGrabMixin",
+        "LevelRendererCamWrapMixin",
+        "ParticlePosMixin",
+        "MinecraftServerRelocateMixin",
+        "MinecraftClientRelocateMixin",
+        "MinecraftServerAccessor"
+    ],
+    "injectors": { "defaultRequire": 1 }
+}

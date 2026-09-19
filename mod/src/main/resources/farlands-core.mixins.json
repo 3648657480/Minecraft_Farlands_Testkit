@@ -1,0 +1,17 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.farlands.g1.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [
+        "BlockPosMixin",
+        "MthFloorMixin",
+        "SectionPosMixin",
+        "ChunkPosMixin",
+        "Vec3RealCoordsMixin",
+        "DimensionTypeMixin",
+        "WorldBorderMixin",
+        "WorldBorderExtentMixin"
+    ],
+    "injectors": { "defaultRequire": 1 }
+}

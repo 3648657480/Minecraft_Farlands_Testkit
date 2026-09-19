@@ -33,6 +33,13 @@ public final class F3Helper {
         double x = entity.getX();
         double y = entity.getY();
         double z = entity.getZ();
+        if (com.farlands.g1.util.FarProjection.isEpochActive()) {
+            out.add(String.format(Locale.ROOT, "Real position: (%.3f, %.3f, %.3f)   [epoch %.0f, %.0f]",
+                com.farlands.g1.util.FarProjection.realBlockX((int) Math.floor(x)), y,
+                com.farlands.g1.util.FarProjection.realBlockZ((int) Math.floor(z)),
+                com.farlands.g1.util.FarProjection.epochBlockX(),
+                com.farlands.g1.util.FarProjection.epochBlockZ()));
+        }
         out.add(String.format(Locale.ROOT, "Float precision (ULP): +-%.4g / +-%.4g / +-%.4g",
             (double) Math.ulp((float) x), (double) Math.ulp((float) y), (double) Math.ulp((float) z)));
         Vec3 origin = FloatingOrigin.get();
