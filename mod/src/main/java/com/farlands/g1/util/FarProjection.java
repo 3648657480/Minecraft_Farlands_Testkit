@@ -303,6 +303,16 @@ public final class FarProjection {
         return (double) v;
     }
 
+    /** F3 display: real X of a local double (epoch + local). */
+    public static double displayX(double local) {
+        return epochBlockX + local;
+    }
+
+    /** F3 display: real Z of a local double (epoch + local). */
+    public static double displayZ(double local) {
+        return epochBlockZ + local;
+    }
+
     /** Real block coordinate of a long-domain value. */
     public static double blockReal(long block) {
         return block < WRAP_BAND ? (double) (block + (1L << 32)) : (double) block;

@@ -50,9 +50,7 @@ public class MinecraftClientRelocateMixin {
             System.out.println("[FarLands] translated " + n + " chunks, reloading world '" + levelId + "'");
             System.out.flush();
             if (!Double.isNaN(req.newEpochX)) {
-                java.nio.file.Files.writeString(
-                    worldPath.resolve("farlands_epoch.txt"),
-                    req.newEpochX + "," + req.newEpochZ);
+                com.farlands.g1.util.FarConfig.setEpoch(req.newEpochX, req.newEpochZ);
                 System.out.println("[FarLands] epoch persisted: (" + req.newEpochX + "," + req.newEpochZ + ")");
                 System.out.flush();
             }

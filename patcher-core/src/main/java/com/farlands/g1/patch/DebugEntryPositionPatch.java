@@ -241,6 +241,10 @@ public final class DebugEntryPositionPatch implements ClassPatch {
         il.add(new VarInsnNode(Opcodes.ALOAD, 6));
         il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/world/entity/Entity",
             axis == 0 ? "getX" : axis == 1 ? "getY" : "getZ", "()D", false));
+        if (axis != 1) {
+            il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection",
+                axis == 0 ? "displayX" : "displayZ", "(D)D", false));
+        }
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf",
             "(D)Ljava/lang/Double;", false));
         return il;
@@ -366,18 +370,24 @@ public final class DebugEntryPositionPatch implements ClassPatch {
         il.add(new VarInsnNode(Opcodes.ALOAD, 6));
         il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/world/entity/Entity",
             axis == 0 ? "getX" : axis == 1 ? "getY" : "getZ", "()D", false));
+        if (axis != 1) {
+            il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection",
+                axis == 0 ? "displayX" : "displayZ", "(D)D", false));
+        }
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Math", "floor", "(D)D", false));
         il.add(new InsnNode(Opcodes.D2L));
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
         return il;
     }
 
-    // (long) Math.floor(entity.getX/Z() / 16.0)
+    // (long) Math.floor(display(entity.getX/Z()) / 16.0)
     private static InsnList floorEntityCoordDiv(int axis) {
         InsnList il = new InsnList();
         il.add(new VarInsnNode(Opcodes.ALOAD, 6));
         il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/world/entity/Entity",
             axis == 0 ? "getX" : "getZ", "()D", false));
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection",
+            axis == 0 ? "displayX" : "displayZ", "(D)D", false));
         il.add(new LdcInsnNode(16.0));
         il.add(new InsnNode(Opcodes.DDIV));
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Math", "floor", "(D)D", false));
