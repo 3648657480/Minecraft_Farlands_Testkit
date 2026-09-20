@@ -38,15 +38,8 @@ public class RealTpCommandMixin {
                             localX -= FarProjection.epochBlockX();
                             localZ -= FarProjection.epochBlockZ();
                         }
-                        if (localX > Integer.MAX_VALUE || localX < Integer.MIN_VALUE
-                            || localZ > Integer.MAX_VALUE || localZ < Integer.MIN_VALUE) {
-                            ctx.getSource().sendFailure(net.minecraft.network.chat.Component.literal(
-                                "目标超出当前纪元范围 (local 溢出)。当前 epoch=("
-                                + (long) FarProjection.epochBlockX() + "," + (long) FarProjection.epochBlockZ()
-                                + ")，可传送真实坐标约 epoch±2^31。"));
-                            return 0;
-                        }
-                        // out of the safe window -> relocate the epoch around the target
+                        // out of the safe window (including int-overflow targets)
+                        // -> relocate the epoch around the target
                         double limit = 2_147_483_647.0 - 100_000.0;
                         if (FarProjection.isEpochActive()
                             && (Math.abs(localX) > limit || Math.abs(localZ) > limit)) {

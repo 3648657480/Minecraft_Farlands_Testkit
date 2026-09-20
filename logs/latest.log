@@ -1,7 +1,8 @@
-[15:14:55] [main/INFO]: [STDERR]: java.lang.NumberFormatException: For input string: "a"
-[15:14:55] [main/INFO]: [STDERR]: 	at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:67)
-[15:14:55] [main/INFO]: [STDERR]: 	at java.base/java.lang.Integer.parseInt(Integer.java:565)
-[15:14:55] [main/INFO]: [STDERR]: 	at java.base/java.lang.Integer.parseInt(Integer.java:662)
-[15:14:55] [main/INFO]: [STDERR]: 	at farlands.translator.Main.regionCoords(Main.java:131)
-[15:14:55] [main/INFO]: [STDERR]: 	at farlands.translator.Main.verifyRegion(Main.java:231)
-[15:14:55] [main/INFO]: [STDERR]: 	at farlands.translator.Main.main(Main.java:43)
+[13:40:42] [main/INFO]: [STDOUT]:   level.dat root keys: [Data]
+[13:40:42] [main/INFO]: [STDOUT]:   level.dat Data keys: [difficulty_settings, singleplayer_uuid, Time, GameType, ServerBrands, version, LastPlayed, spawn, Version, LevelName, initialized, WasModded, DataVersion, allowCommands, DataPacks]
+[13:40:42] [main/INFO]: [STDOUT]:   level.dat Player present: false
+[13:40:42] [main/INFO]: [STDOUT]:   level.dat spawn before: {dimension:"minecraft:overworld",pitch:0.0f,pos:[I;0,100,0],yaw:0.0f}
+[13:40:42] [main/INFO]: [STDOUT]:   level.dat respawn shifted
+[13:40:42] [main/INFO]: [STDOUT]:   player 00000000-0000-300d-9f9a-26f39c96a692.dat shifted
+[13:40:42] [main/INFO]: [STDOUT]:   player 00000000-0000-300d-9f9a-26f39c96a692.dat_old shifted
+[13:40:42] [main/INFO]: [STDOUT]: translated 6167 chunks (+490847808,0 chunks)

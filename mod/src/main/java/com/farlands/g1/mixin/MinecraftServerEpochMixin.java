@@ -28,7 +28,19 @@ public abstract class MinecraftServerEpochMixin {
             MinecraftServer self = (MinecraftServer) (Object) this;
             Path epochFile = epochFile(self);
             String spec = System.getProperty("farlands.spawnset");
-            if (spec != null && !spec.isEmpty()) {
+            if (Files.isRegularFile(epochFile)) {
+                // persisted epoch wins: after a relocation the file holds the
+                // new origin and a leftover -Dfarlands.spawnset must not
+                // override it (observed: reload reset the epoch while the
+                // world files had already been shifted).
+                String[] parts = Files.readString(epochFile).trim().split(",");
+                double px = Double.parseDouble(parts[0].trim());
+                double pz = Double.parseDouble(parts[1].trim());
+                FarProjection.setEpoch(px, pz);
+                System.out.println("[FarLands-G1] EPOCH set to real (" + px + "," + pz
+                    + ") from farlands_epoch.txt");
+                farlands$forceLocalRespawn(self);
+            } else if (spec != null && !spec.isEmpty()) {
                 String[] parts = spec.split(",");
                 double px = Double.parseDouble(parts[0].trim());
                 double pz = Double.parseDouble(parts[2].trim());
@@ -40,14 +52,6 @@ public abstract class MinecraftServerEpochMixin {
                 }
                 System.out.println("[FarLands-G1] EPOCH set to real (" + px + "," + pz
                     + ") from farlands.spawnset (persisted)");
-                farlands$forceLocalRespawn(self);
-            } else if (Files.isRegularFile(epochFile)) {
-                String[] parts = Files.readString(epochFile).trim().split(",");
-                double px = Double.parseDouble(parts[0].trim());
-                double pz = Double.parseDouble(parts[1].trim());
-                FarProjection.setEpoch(px, pz);
-                System.out.println("[FarLands-G1] EPOCH set to real (" + px + "," + pz
-                    + ") from farlands_epoch.txt");
                 farlands$forceLocalRespawn(self);
             } else {
                 LevelData.RespawnData rd = self.getWorldData().overworldData().getRespawnData();
