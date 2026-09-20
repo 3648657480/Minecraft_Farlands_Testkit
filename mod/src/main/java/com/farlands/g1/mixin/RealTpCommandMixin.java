@@ -38,6 +38,39 @@ public class RealTpCommandMixin {
                             localX -= FarProjection.epochBlockX();
                             localZ -= FarProjection.epochBlockZ();
                         }
+                        if (localX > Integer.MAX_VALUE || localX < Integer.MIN_VALUE
+                            || localZ > Integer.MAX_VALUE || localZ < Integer.MIN_VALUE) {
+                            ctx.getSource().sendFailure(net.minecraft.network.chat.Component.literal(
+                                "目标超出当前纪元范围 (local 溢出)。当前 epoch=("
+                                + (long) FarProjection.epochBlockX() + "," + (long) FarProjection.epochBlockZ()
+                                + ")，可传送真实坐标约 epoch±2^31。"));
+                            return 0;
+                        }
+                        // out of the safe window -> relocate the epoch around the target
+                        double limit = 2_147_483_647.0 - 100_000.0;
+                        if (FarProjection.isEpochActive()
+                            && (Math.abs(localX) > limit || Math.abs(localZ) > limit)) {
+                            double newEpochX = Math.floor(pos.x / 16.0) * 16.0;
+                            double newEpochZ = Math.floor(pos.z / 16.0) * 16.0;
+                            double shiftChunksX = (FarProjection.epochBlockX() - newEpochX) / 16.0;
+                            double shiftChunksZ = (FarProjection.epochBlockZ() - newEpochZ) / 16.0;
+                            if (Math.abs(shiftChunksX) > Integer.MAX_VALUE
+                                || Math.abs(shiftChunksZ) > Integer.MAX_VALUE) {
+                                ctx.getSource().sendFailure(net.minecraft.network.chat.Component.literal(
+                                    "距离过大，单次重定位无法覆盖（需要多步）。"));
+                                return 0;
+                            }
+                            com.farlands.g1.FarRelocate.pending = new com.farlands.g1.FarRelocate.Request(
+                                (int) shiftChunksX, (int) shiftChunksZ, newEpochX, newEpochZ);
+                            ctx.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+                                "目标超出当前窗口，正在重定位世界（新 epoch="
+                                + (long) newEpochX + "," + (long) newEpochZ + "）..."), false);
+                            System.out.println("[FarLands] /realtp out-of-window -> relocate: shift=("
+                                + (long) shiftChunksX + "," + (long) shiftChunksZ
+                                + ") newEpoch=(" + newEpochX + "," + newEpochZ + ")");
+                            System.out.flush();
+                            return 1;
+                        }
                         player.teleportTo(localX, pos.y, localZ);
                         System.out.println("[FarLands] /realtp real=(" + pos.x + "," + pos.y + "," + pos.z
                             + ") -> local=(" + localX + "," + pos.y + "," + localZ + ")");

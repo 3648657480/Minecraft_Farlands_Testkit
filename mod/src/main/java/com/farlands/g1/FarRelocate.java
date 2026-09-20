@@ -12,10 +12,19 @@ public final class FarRelocate {
     public static final class Request {
         public final int dx;
         public final int dz;
+        /** New epoch to persist after the shift (NaN = keep current). */
+        public final double newEpochX;
+        public final double newEpochZ;
 
         public Request(int dx, int dz) {
+            this(dx, dz, Double.NaN, Double.NaN);
+        }
+
+        public Request(int dx, int dz, double newEpochX, double newEpochZ) {
             this.dx = dx;
             this.dz = dz;
+            this.newEpochX = newEpochX;
+            this.newEpochZ = newEpochZ;
         }
     }
 

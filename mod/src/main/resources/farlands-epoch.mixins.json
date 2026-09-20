@@ -10,8 +10,8 @@
         "PlayerSpawnFinderEpochMixin",
         "SpawnTicketRadiusMixin",
         "PrepareSpawnTaskMixin",
-        "AcquireDiagMixin",
-        "RealTpCommandMixin"
+        "RealTpCommandMixin",
+        "MinecraftServerAccessor"
     ],
     "injectors": { "defaultRequire": 1 }
 }

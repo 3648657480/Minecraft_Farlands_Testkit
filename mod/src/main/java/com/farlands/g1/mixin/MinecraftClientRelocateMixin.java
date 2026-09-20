@@ -49,6 +49,13 @@ public class MinecraftClientRelocateMixin {
             int n = Main.translate(worldPath, req.dx, req.dz);
             System.out.println("[FarLands] translated " + n + " chunks, reloading world '" + levelId + "'");
             System.out.flush();
+            if (!Double.isNaN(req.newEpochX)) {
+                java.nio.file.Files.writeString(
+                    worldPath.resolve("farlands_epoch.txt"),
+                    req.newEpochX + "," + req.newEpochZ);
+                System.out.println("[FarLands] epoch persisted: (" + req.newEpochX + "," + req.newEpochZ + ")");
+                System.out.flush();
+            }
             mc.createWorldOpenFlows().openWorld(levelId, () -> {});
         } catch (Throwable t) {
             System.out.println("[FarLands] relocate FAILED: " + t);

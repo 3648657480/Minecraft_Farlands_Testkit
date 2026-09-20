@@ -9,12 +9,15 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 /**
- * E line: sets the fixed epoch origin from the world's saved respawn point
- * at the earliest possible moment - before {@code createLevels} loads any
- * chunk. The epoch then stays constant for the whole session, so every int
- * domain (chunk keys, sections, tickets, generation) is expressed in one
- * consistent local domain.
+ * E line: sets the fixed epoch origin before {@code createLevels} loads any
+ * chunk, so every int domain is one consistent local domain.
+ *
+ * <p>Priority: {@code -Dfarlands.spawnset} (also persisted) &gt; the world's
+ * {@code farlands_epoch.txt} &gt; the saved respawn point.</p>
  */
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerEpochMixin {
@@ -23,25 +26,29 @@ public abstract class MinecraftServerEpochMixin {
     private void farlands$setEpoch(CallbackInfo ci) {
         try {
             MinecraftServer self = (MinecraftServer) (Object) this;
+            Path epochFile = epochFile(self);
             String spec = System.getProperty("farlands.spawnset");
             if (spec != null && !spec.isEmpty()) {
                 String[] parts = spec.split(",");
                 double px = Double.parseDouble(parts[0].trim());
                 double pz = Double.parseDouble(parts[2].trim());
                 FarProjection.setEpoch(px, pz);
-                System.out.println("[FarLands-G1] EPOCH set to real (" + px + "," + pz
-                    + ") from farlands.spawnset");
                 try {
-                    LevelData.RespawnData localSpawn = new LevelData.RespawnData(
-                        net.minecraft.core.GlobalPos.of(net.minecraft.world.level.Level.OVERWORLD,
-                            new BlockPos(0, 100, 0)), 0.0f, 0.0f);
-                    self.getWorldData().overworldData().setSpawn(localSpawn);
-                    LevelData.RespawnData after = self.getWorldData().overworldData().getRespawnData();
-                    System.out.println("[FarLands-G1] respawn forced to local origin (0,100,0); readback="
-                        + (after != null ? after.pos() : "null"));
+                    Files.writeString(epochFile, px + "," + pz);
                 } catch (Throwable t) {
-                    System.out.println("[FarLands-G1] respawn override FAILED: " + t);
+                    System.out.println("[FarLands-G1] epoch persist FAILED: " + t);
                 }
+                System.out.println("[FarLands-G1] EPOCH set to real (" + px + "," + pz
+                    + ") from farlands.spawnset (persisted)");
+                farlands$forceLocalRespawn(self);
+            } else if (Files.isRegularFile(epochFile)) {
+                String[] parts = Files.readString(epochFile).trim().split(",");
+                double px = Double.parseDouble(parts[0].trim());
+                double pz = Double.parseDouble(parts[1].trim());
+                FarProjection.setEpoch(px, pz);
+                System.out.println("[FarLands-G1] EPOCH set to real (" + px + "," + pz
+                    + ") from farlands_epoch.txt");
+                farlands$forceLocalRespawn(self);
             } else {
                 LevelData.RespawnData rd = self.getWorldData().overworldData().getRespawnData();
                 if (rd != null) {
@@ -54,5 +61,22 @@ public abstract class MinecraftServerEpochMixin {
             System.out.println("[FarLands-G1] EPOCH set FAILED: " + t);
         }
         System.out.flush();
+    }
+
+    private static void farlands$forceLocalRespawn(MinecraftServer self) {
+        try {
+            LevelData.RespawnData localSpawn = new LevelData.RespawnData(
+                net.minecraft.core.GlobalPos.of(net.minecraft.world.level.Level.OVERWORLD,
+                    new BlockPos(0, 100, 0)), 0.0f, 0.0f);
+            self.getWorldData().overworldData().setSpawn(localSpawn);
+            System.out.println("[FarLands-G1] respawn forced to local origin (0,100,0)");
+        } catch (Throwable t) {
+            System.out.println("[FarLands-G1] respawn override FAILED: " + t);
+        }
+    }
+
+    private static Path epochFile(MinecraftServer self) {
+        return ((MinecraftServerAccessor) self).farlands$storageSource()
+            .getLevelDirectory().path().resolve("farlands_epoch.txt");
     }
 }

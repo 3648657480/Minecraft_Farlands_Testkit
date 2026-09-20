@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ChunkMapGenRateLimitMixin {
 
     @Unique
-    private static final int MAX_PER_RUN = 200;
+    private static final int MAX_PER_RUN = 2000;
 
     @Shadow
     @Final
@@ -40,12 +40,9 @@ public class ChunkMapGenRateLimitMixin {
         int n = Math.min(pendingGenerationTasks.size(), MAX_PER_RUN);
         for (int i = 0; i < n; i++) {
             ChunkGenerationTask task = pendingGenerationTasks.remove(0);
-            if (task.getCenter() == null) {
-                System.out.println("[FarLands] rateLimit: task center null, status=" + task.targetStatus);
-                System.out.flush();
-                continue;
+            if (task.getCenter() != null) {
+                runGenerationTask(task);
             }
-            runGenerationTask(task);
         }
         ci.cancel();
     }
