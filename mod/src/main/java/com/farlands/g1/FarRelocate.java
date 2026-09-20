@@ -15,16 +15,28 @@ public final class FarRelocate {
         /** New epoch to persist after the shift (NaN = keep current). */
         public final double newEpochX;
         public final double newEpochZ;
+        /**
+         * true = archive the current epoch's chunks and restore the target
+         * epoch's archive (if any) - used by /realtp; false = shift the save
+         * in place (used by the walking auto-relocate so the terrain around
+         * the player follows).
+         */
+        public final boolean archive;
 
         public Request(long dx, long dz) {
-            this(dx, dz, Double.NaN, Double.NaN);
+            this(dx, dz, Double.NaN, Double.NaN, false);
         }
 
         public Request(long dx, long dz, double newEpochX, double newEpochZ) {
+            this(dx, dz, newEpochX, newEpochZ, false);
+        }
+
+        public Request(long dx, long dz, double newEpochX, double newEpochZ, boolean archive) {
             this.dx = dx;
             this.dz = dz;
             this.newEpochX = newEpochX;
             this.newEpochZ = newEpochZ;
+            this.archive = archive;
         }
     }
 

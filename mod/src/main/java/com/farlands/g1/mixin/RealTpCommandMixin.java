@@ -48,7 +48,7 @@ public class RealTpCommandMixin {
                             long shiftChunksX = (long) ((FarProjection.epochBlockX() - newEpochX) / 16.0);
                             long shiftChunksZ = (long) ((FarProjection.epochBlockZ() - newEpochZ) / 16.0);
                             com.farlands.g1.FarRelocate.pending = new com.farlands.g1.FarRelocate.Request(
-                                shiftChunksX, shiftChunksZ, newEpochX, newEpochZ);
+                                shiftChunksX, shiftChunksZ, newEpochX, newEpochZ, true);
                             ctx.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal(
                                 "目标超出当前窗口，正在重定位世界（新 epoch="
                                 + (long) newEpochX + "," + (long) newEpochZ + "，平移 "

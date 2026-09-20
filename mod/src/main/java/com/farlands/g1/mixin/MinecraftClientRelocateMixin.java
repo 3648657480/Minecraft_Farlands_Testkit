@@ -46,12 +46,11 @@ public class MinecraftClientRelocateMixin {
             mc.clearClientLevel(new GenericMessageScreen(Component.literal("Far Lands: relocating world...")));
             System.out.println("[FarLands] translating world by (" + req.dx + "," + req.dz + ")");
             System.out.flush();
-            int n = 0;
-            if (Math.abs(req.dx) > Integer.MAX_VALUE || Math.abs(req.dz) > Integer.MAX_VALUE) {
-                // too far to shift the region files (int region coords) in one
-                // step; shifting in many steps rewrites the whole save each
-                // time (impractical). Discard the old chunks instead - the
-                // world regenerates at the new epoch.
+            int n;
+            if (req.archive) {
+                n = archiveRelocate(worldPath, req);
+                System.out.println("[FarLands] archive relocate done (" + n + " files)");
+            } else if (Math.abs(req.dx) > Integer.MAX_VALUE || Math.abs(req.dz) > Integer.MAX_VALUE) {
                 n = discardChunks(worldPath);
                 System.out.println("[FarLands] relocate too far -> discarded " + n
                     + " region files (world regenerates at new epoch)");
@@ -71,6 +70,90 @@ public class MinecraftClientRelocateMixin {
             t.printStackTrace(System.out);
             System.out.flush();
         }
+    }
+
+    /**
+     * Archive-style relocation: the current epoch's chunk files are moved to
+     * {@code farlands_epochs/<epoch>/}; the target epoch's archive (if it
+     * exists - the player has been there before) is moved back. The middle
+     * is simply never generated. Fast (file moves only).
+     */
+    private static int archiveRelocate(Path worldPath, com.farlands.g1.FarRelocate.Request req) {
+        Path epochsDir = worldPath.resolve("farlands_epochs");
+        String oldKey = epochKey(com.farlands.g1.util.FarConfig.epochX(), com.farlands.g1.util.FarConfig.epochZ());
+        String newKey = epochKey(req.newEpochX, req.newEpochZ);
+        int moved = 0;
+        // 1) archive the current epoch
+        moved += moveChunks(worldPath, epochsDir.resolve(oldKey));
+        // 2) restore the target epoch if archived
+        Path target = epochsDir.resolve(newKey);
+        if (java.nio.file.Files.isDirectory(target)) {
+            moved += moveChunksBack(target, worldPath);
+            System.out.println("[FarLands] restored archived epoch " + newKey);
+        }
+        return moved;
+    }
+
+    private static String epochKey(double x, double z) {
+        return "e_" + (long) x + "_" + (long) z;
+    }
+
+    /** moves dimensions/.../{region,entities}/*.mca into the archive dir */
+    private static int moveChunks(Path worldPath, Path archiveDir) {
+        int moved = 0;
+        for (String dim : new String[]{"overworld", "the_nether", "the_end"}) {
+            for (String kind : new String[]{"region", "entities"}) {
+                Path src = worldPath.resolve("dimensions/minecraft/" + dim + "/" + kind);
+                if (!java.nio.file.Files.isDirectory(src)) {
+                    continue;
+                }
+                Path dst = archiveDir.resolve(dim + "/" + kind);
+                try {
+                    java.nio.file.Files.createDirectories(dst);
+                    try (var files = java.nio.file.Files.list(src)) {
+                        for (Path f : files.toList()) {
+                            if (f.toString().endsWith(".mca")) {
+                                java.nio.file.Files.move(f, dst.resolve(f.getFileName()),
+                                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                                moved++;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("[FarLands] archive move failed: " + e);
+                }
+            }
+        }
+        return moved;
+    }
+
+    /** moves archived *.mca back into the world */
+    private static int moveChunksBack(Path archiveDir, Path worldPath) {
+        int moved = 0;
+        for (String dim : new String[]{"overworld", "the_nether", "the_end"}) {
+            for (String kind : new String[]{"region", "entities"}) {
+                Path src = archiveDir.resolve(dim + "/" + kind);
+                if (!java.nio.file.Files.isDirectory(src)) {
+                    continue;
+                }
+                Path dst = worldPath.resolve("dimensions/minecraft/" + dim + "/" + kind);
+                try {
+                    java.nio.file.Files.createDirectories(dst);
+                    try (var files = java.nio.file.Files.list(src)) {
+                        for (Path f : files.toList()) {
+                            if (f.toString().endsWith(".mca")) {
+                                java.nio.file.Files.move(f, dst.resolve(f.getFileName()),
+                                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                                moved++;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("[FarLands] archive restore failed: " + e);
+                }
+            }
+        }
+        return moved;
     }
 
     private static int discardChunks(Path worldPath) {
