@@ -49,7 +49,7 @@ public class MinecraftServerRelocateMixin {
         if (!((Object) this instanceof IntegratedServer)) {
             return;
         }
-        if (!FarProjection.isEpochActive() || !autoRelocate()) {
+        if (!FarProjection.isEpochActive()) {
             return;
         }
         long now = System.currentTimeMillis();
@@ -61,27 +61,39 @@ public class MinecraftServerRelocateMixin {
         for (ServerPlayer p : self.getPlayerList().getPlayers()) {
             double x = p.getX();
             double z = p.getZ();
-            if (Math.abs(x) > limit || Math.abs(z) > limit) {
-                double newEpochX = Math.floor(x / 16.0) * 16.0;
-                double newEpochZ = Math.floor(z / 16.0) * 16.0;
-                double shiftX = (FarProjection.epochBlockX() - newEpochX) / 16.0;
-                double shiftZ = (FarProjection.epochBlockZ() - newEpochZ) / 16.0;
-                if (Math.abs(shiftX) > Integer.MAX_VALUE || Math.abs(shiftZ) > Integer.MAX_VALUE) {
-                    System.out.println("[FarLands] auto-relocate skipped: shift too large ("
-                        + (long) shiftX + "," + (long) shiftZ + ")");
-                    System.out.flush();
-                    lastRelocateAt = now;
-                    return;
-                }
-                FarRelocate.pending = new FarRelocate.Request(
-                    (int) shiftX, (int) shiftZ, newEpochX, newEpochZ);
+            if (Math.abs(x) <= limit && Math.abs(z) <= limit) {
+                continue;
+            }
+            if (!autoRelocate()) {
+                // walking mode: never interrupt; just warn the player to /realtp
                 lastRelocateAt = now;
-                System.out.println("[FarLands] auto-relocate: player local=(" + (long) x + "," + (long) z
-                    + ") near window edge -> new epoch=(" + (long) newEpochX + "," + (long) newEpochZ
-                    + ") shift=(" + (long) shiftX + "," + (long) shiftZ + ")");
+                p.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    "\u00a7e[FarLands] \u63a5\u8fd1\u7a97\u53e3\u8fb9\u7f18\uff0c\u8bf7\u4f7f\u7528 "
+                    + "/realtp <\u771f\u5b9e\u5750\u6807> \u7ee7\u7eed\u524d\u8fdb"));
+                System.out.println("[FarLands] player near window edge (walking mode, no relocate): local=("
+                    + (long) x + "," + (long) z + ")");
                 System.out.flush();
                 return;
             }
+            double newEpochX = Math.floor(x / 16.0) * 16.0;
+            double newEpochZ = Math.floor(z / 16.0) * 16.0;
+            double shiftX = (FarProjection.epochBlockX() - newEpochX) / 16.0;
+            double shiftZ = (FarProjection.epochBlockZ() - newEpochZ) / 16.0;
+            if (Math.abs(shiftX) > Integer.MAX_VALUE || Math.abs(shiftZ) > Integer.MAX_VALUE) {
+                System.out.println("[FarLands] auto-relocate skipped: shift too large ("
+                    + (long) shiftX + "," + (long) shiftZ + ")");
+                System.out.flush();
+                lastRelocateAt = now;
+                return;
+            }
+            FarRelocate.pending = new FarRelocate.Request(
+                (int) shiftX, (int) shiftZ, newEpochX, newEpochZ);
+            lastRelocateAt = now;
+            System.out.println("[FarLands] auto-relocate: player local=(" + (long) x + "," + (long) z
+                + ") near window edge -> new epoch=(" + (long) newEpochX + "," + (long) newEpochZ
+                + ") shift=(" + (long) shiftX + "," + (long) shiftZ + ")");
+            System.out.flush();
+            return;
         }
     }
 }

@@ -19,7 +19,7 @@ public final class FarConfig {
 
     private static volatile double epochX = Double.NaN;
     private static volatile double epochZ = Double.NaN;
-    private static volatile boolean autoRelocate = true;
+    private static volatile boolean autoRelocate = false;
     private static volatile double relocateMargin = 100_000.0;
     private static volatile Path file;
 
@@ -68,7 +68,7 @@ public final class FarConfig {
                 epochX = Double.parseDouble(p.getProperty("epoch_x").trim());
                 epochZ = Double.parseDouble(p.getProperty("epoch_z", "0").trim());
             }
-            autoRelocate = Boolean.parseBoolean(p.getProperty("auto_relocate", "true"));
+            autoRelocate = Boolean.parseBoolean(p.getProperty("auto_relocate", "false"));
             relocateMargin = Double.parseDouble(p.getProperty("relocate_margin", "100000"));
         } catch (NumberFormatException e) {
             System.out.println("[FarLands-G1] config parse FAILED: " + e);
