@@ -253,7 +253,7 @@ public final class DebugEntryPositionPatch implements ClassPatch {
     private static InsnList blockFormat() {
         InsnList il = new InsnList();
         il.add(new FieldInsnNode(Opcodes.GETSTATIC, "java/util/Locale", "ROOT", "Ljava/util/Locale;"));
-        il.add(new LdcInsnNode("Block: %d %d %d"));
+        il.add(new LdcInsnNode("Block: %.6g %.0f %.6g"));
         il.add(new InsnNode(Opcodes.ICONST_3));
         il.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
         il.add(new InsnNode(Opcodes.DUP));
@@ -264,7 +264,9 @@ public final class DebugEntryPositionPatch implements ClassPatch {
         il.add(new InsnNode(Opcodes.ICONST_1));
         il.add(new VarInsnNode(Opcodes.ALOAD, 7));
         il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/core/BlockPos", "getY", "()I", false));
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
+        il.add(new InsnNode(Opcodes.I2D));
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf",
+            "(D)Ljava/lang/Double;", false));
         il.add(new InsnNode(Opcodes.AASTORE));
         il.add(new InsnNode(Opcodes.DUP));
         il.add(new InsnNode(Opcodes.ICONST_2));
@@ -278,7 +280,7 @@ public final class DebugEntryPositionPatch implements ClassPatch {
     private static InsnList chunkFormat() {
         InsnList il = new InsnList();
         il.add(new FieldInsnNode(Opcodes.GETSTATIC, "java/util/Locale", "ROOT", "Ljava/util/Locale;"));
-        il.add(new LdcInsnNode("Chunk: %d %d %d"));
+        il.add(new LdcInsnNode("Chunk: %.6g %.0f %.6g"));
         il.add(new InsnNode(Opcodes.ICONST_3));
         il.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
         il.add(new InsnNode(Opcodes.DUP));
@@ -291,7 +293,8 @@ public final class DebugEntryPositionPatch implements ClassPatch {
         il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/core/BlockPos", "getY", "()I", false));
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/minecraft/core/SectionPos", "blockToSectionCoord",
             "(I)I", false));
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
+        il.add(new InsnNode(Opcodes.I2D));
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false));
         il.add(new InsnNode(Opcodes.AASTORE));
         il.add(new InsnNode(Opcodes.DUP));
         il.add(new InsnNode(Opcodes.ICONST_2));
@@ -375,8 +378,7 @@ public final class DebugEntryPositionPatch implements ClassPatch {
                 axis == 0 ? "displayX" : "displayZ", "(D)D", false));
         }
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Math", "floor", "(D)D", false));
-        il.add(new InsnNode(Opcodes.D2L));
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false));
         return il;
     }
 
@@ -391,8 +393,7 @@ public final class DebugEntryPositionPatch implements ClassPatch {
         il.add(new LdcInsnNode(16.0));
         il.add(new InsnNode(Opcodes.DDIV));
         il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Math", "floor", "(D)D", false));
-        il.add(new InsnNode(Opcodes.D2L));
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false));
         return il;
     }
 }
