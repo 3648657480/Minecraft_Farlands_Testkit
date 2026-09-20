@@ -47,18 +47,16 @@ public class MinecraftClientRelocateMixin {
             System.out.println("[FarLands] translating world by (" + req.dx + "," + req.dz + ")");
             System.out.flush();
             int n = 0;
-            long remainingX = req.dx;
-            long remainingZ = req.dz;
-            while (remainingX != 0 || remainingZ != 0) {
-                int stepX = (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, remainingX));
-                int stepZ = (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, remainingZ));
-                n += Main.translate(worldPath, stepX, stepZ);
-                remainingX -= stepX;
-                remainingZ -= stepZ;
-                if (remainingX != 0 || remainingZ != 0) {
-                    System.out.println("[FarLands] multi-step relocate: " + remainingX + "," + remainingZ + " chunks left");
-                    System.out.flush();
-                }
+            if (Math.abs(req.dx) > Integer.MAX_VALUE || Math.abs(req.dz) > Integer.MAX_VALUE) {
+                // too far to shift the region files (int region coords) in one
+                // step; shifting in many steps rewrites the whole save each
+                // time (impractical). Discard the old chunks instead - the
+                // world regenerates at the new epoch.
+                n = discardChunks(worldPath);
+                System.out.println("[FarLands] relocate too far -> discarded " + n
+                    + " region files (world regenerates at new epoch)");
+            } else {
+                n = Main.translate(worldPath, (int) req.dx, (int) req.dz);
             }
             System.out.println("[FarLands] translated " + n + " chunks, reloading world '" + levelId + "'");
             System.out.flush();
@@ -73,5 +71,28 @@ public class MinecraftClientRelocateMixin {
             t.printStackTrace(System.out);
             System.out.flush();
         }
+    }
+
+    private static int discardChunks(Path worldPath) {
+        int deleted = 0;
+        for (String dim : new String[]{"overworld", "the_nether", "the_end"}) {
+            for (String kind : new String[]{"region", "entities"}) {
+                Path dir = worldPath.resolve("dimensions/minecraft/" + dim + "/" + kind);
+                if (!java.nio.file.Files.isDirectory(dir)) {
+                    continue;
+                }
+                try (var files = java.nio.file.Files.list(dir)) {
+                    for (Path f : files.toList()) {
+                        if (f.toString().endsWith(".mca")) {
+                            java.nio.file.Files.deleteIfExists(f);
+                            deleted++;
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("[FarLands] discard failed for " + dir + ": " + e);
+                }
+            }
+        }
+        return deleted;
     }
 }
