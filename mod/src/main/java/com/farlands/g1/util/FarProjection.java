@@ -54,13 +54,15 @@ public final class FarProjection {
     /** Exact epoch origin (BigInteger) - survives beyond double's range. */
     private static volatile java.math.BigInteger epochBigX = java.math.BigInteger.ZERO;
     private static volatile java.math.BigInteger epochBigZ = java.math.BigInteger.ZERO;
+    /** True once an epoch has been set (even 0) - the epoch machinery is live. */
+    private static volatile boolean epochInitialized = false;
 
     private FarProjection() {
     }
 
     public static void setEpoch(long epochX, long epochZ) {
         if (!epochSupported()) {
-            return; // 非 epoch 客户端 jar（J1-J3）：epoch 必须保持休眠
+            return; // 闈?epoch 瀹㈡埛绔?jar锛圝1-J3锛夛細epoch 蹇呴』淇濇寔浼戠湢
         }
         setEpoch(java.math.BigInteger.valueOf(epochX), java.math.BigInteger.valueOf(epochZ));
     }
@@ -82,6 +84,7 @@ public final class FarProjection {
         epochBigZ = z;
         epochBlockX = x.doubleValue();
         epochBlockZ = z.doubleValue();
+        epochInitialized = true;
     }
 
     /** Exact epoch origin (BigInteger). */
@@ -112,7 +115,7 @@ public final class FarProjection {
      * vanilla.
      */
     public static boolean isEpochActive() {
-        return epochBlockX != 0.0 || epochBlockZ != 0.0;
+        return epochInitialized;
     }
 
     public static double epochBlockX() {

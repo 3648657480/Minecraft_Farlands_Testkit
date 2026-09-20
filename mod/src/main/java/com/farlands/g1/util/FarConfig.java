@@ -73,6 +73,13 @@ public final class FarConfig {
         } catch (NumberFormatException e) {
             System.out.println("[FarLands-G1] config parse FAILED: " + e);
         }
+        if (epochBigX == null) {
+            // auto-create: a fresh world gets an epoch at the origin so the
+            // epoch machinery (and /realtp) is live from the start
+            epochBigX = java.math.BigInteger.ZERO;
+            epochBigZ = java.math.BigInteger.ZERO;
+            System.out.println("[FarLands-G1] config auto-created (epoch = origin)");
+        }
         if (spawnset != null || !Files.isRegularFile(file)) {
             save();
         }
