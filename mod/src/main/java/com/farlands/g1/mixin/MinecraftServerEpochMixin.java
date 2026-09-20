@@ -30,8 +30,8 @@ public abstract class MinecraftServerEpochMixin {
                 .getLevelDirectory().path();
             com.farlands.g1.util.FarConfig.load(worldDir);
             if (com.farlands.g1.util.FarConfig.hasEpoch()) {
-                FarProjection.setEpoch(com.farlands.g1.util.FarConfig.epochX(),
-                    com.farlands.g1.util.FarConfig.epochZ());
+                FarProjection.setEpoch(com.farlands.g1.util.FarConfig.epochBigX(),
+                    com.farlands.g1.util.FarConfig.epochBigZ());
                 System.out.println("[FarLands-G1] EPOCH set to real ("
                     + com.farlands.g1.util.FarConfig.epochX() + ","
                     + com.farlands.g1.util.FarConfig.epochZ() + ") from farlands.properties");

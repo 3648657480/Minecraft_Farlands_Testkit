@@ -51,6 +51,9 @@ public final class FarProjection {
      */
     private static volatile double epochBlockX;
     private static volatile double epochBlockZ;
+    /** Exact epoch origin (BigInteger) - survives beyond double's range. */
+    private static volatile java.math.BigInteger epochBigX = java.math.BigInteger.ZERO;
+    private static volatile java.math.BigInteger epochBigZ = java.math.BigInteger.ZERO;
 
     private FarProjection() {
     }
@@ -59,16 +62,46 @@ public final class FarProjection {
         if (!epochSupported()) {
             return; // 非 epoch 客户端 jar（J1-J3）：epoch 必须保持休眠
         }
-        epochBlockX = (double) epochX;
-        epochBlockZ = (double) epochZ;
+        setEpoch(java.math.BigInteger.valueOf(epochX), java.math.BigInteger.valueOf(epochZ));
     }
 
     public static void setEpoch(double epochX, double epochZ) {
         if (!epochSupported()) {
             return;
         }
-        epochBlockX = epochX;
-        epochBlockZ = epochZ;
+        setEpoch(java.math.BigDecimal.valueOf(epochX).toBigInteger(),
+            java.math.BigDecimal.valueOf(epochZ).toBigInteger());
+    }
+
+    /** Exact epoch setter (BigInteger). */
+    public static void setEpoch(java.math.BigInteger x, java.math.BigInteger z) {
+        if (!epochSupported()) {
+            return;
+        }
+        epochBigX = x;
+        epochBigZ = z;
+        epochBlockX = x.doubleValue();
+        epochBlockZ = z.doubleValue();
+    }
+
+    /** Exact epoch origin (BigInteger). */
+    public static java.math.BigInteger epochBigX() {
+        return epochBigX;
+    }
+
+    /** Exact epoch origin (BigInteger). */
+    public static java.math.BigInteger epochBigZ() {
+        return epochBigZ;
+    }
+
+    /** Exact real coordinate of a local block value. */
+    public static java.math.BigInteger realBlockBigX(long local) {
+        return epochBigX.add(java.math.BigInteger.valueOf(local));
+    }
+
+    /** Exact real coordinate of a local block value. */
+    public static java.math.BigInteger realBlockBigZ(long local) {
+        return epochBigZ.add(java.math.BigInteger.valueOf(local));
     }
 
     /**

@@ -39,6 +39,12 @@ public final class F3Helper {
                 com.farlands.g1.util.FarProjection.realBlockZ((int) Math.floor(z)),
                 com.farlands.g1.util.FarProjection.epochBlockX(),
                 com.farlands.g1.util.FarProjection.epochBlockZ()));
+            try {
+                java.math.BigInteger bx = com.farlands.g1.util.FarProjection.realBlockBigX((long) Math.floor(x));
+                java.math.BigInteger bz = com.farlands.g1.util.FarProjection.realBlockBigZ((long) Math.floor(z));
+                out.add("Real (exact): " + abbreviate(bx) + " / " + (long) y + " / " + abbreviate(bz));
+            } catch (Throwable ignored) {
+            }
         }
         out.add(String.format(Locale.ROOT, "Float precision (ULP): +-%.4g / +-%.4g / +-%.4g",
             (double) Math.ulp((float) x), (double) Math.ulp((float) y), (double) Math.ulp((float) z)));
@@ -70,5 +76,18 @@ public final class F3Helper {
             }
         }
         return out;
+    }
+
+    /** Full exact value if short, otherwise leading digits + magnitude. */
+    private static String abbreviate(java.math.BigInteger v) {
+        String s = v.toString();
+        if (s.length() <= 40) {
+            return s;
+        }
+        String sign = s.startsWith("-") ? "-" : "";
+        String digits = sign.isEmpty() ? s : s.substring(1);
+        int exp = digits.length() - 1;
+        return sign + digits.charAt(0) + "." + digits.substring(1, Math.min(18, digits.length()))
+            + "e+" + exp + " (" + s.length() + " digits)";
     }
 }

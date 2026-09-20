@@ -17,8 +17,8 @@ import java.util.Properties;
  */
 public final class FarConfig {
 
-    private static volatile double epochX = Double.NaN;
-    private static volatile double epochZ = Double.NaN;
+    private static volatile java.math.BigInteger epochBigX = null;
+    private static volatile java.math.BigInteger epochBigZ = null;
     private static volatile boolean autoRelocate = true;
     private static volatile double relocateMargin = 100_000.0;
     private static volatile Path file;
@@ -65,8 +65,8 @@ public final class FarConfig {
 
         try {
             if (p.containsKey("epoch_x")) {
-                epochX = Double.parseDouble(p.getProperty("epoch_x").trim());
-                epochZ = Double.parseDouble(p.getProperty("epoch_z", "0").trim());
+                epochBigX = new java.math.BigDecimal(p.getProperty("epoch_x").trim()).toBigInteger();
+                epochBigZ = new java.math.BigDecimal(p.getProperty("epoch_z", "0").trim()).toBigInteger();
             }
             autoRelocate = Boolean.parseBoolean(p.getProperty("auto_relocate", "true"));
             relocateMargin = Double.parseDouble(p.getProperty("relocate_margin", "100000"));
@@ -87,9 +87,9 @@ public final class FarConfig {
         try {
             StringBuilder sb = new StringBuilder();
             sb.append("# FarLands G1 world configuration\n");
-            if (!Double.isNaN(epochX)) {
-                sb.append("epoch_x=").append(epochX).append('\n');
-                sb.append("epoch_z=").append(epochZ).append('\n');
+            if (epochBigX != null) {
+                sb.append("epoch_x=").append(epochBigX).append('\n');
+                sb.append("epoch_z=").append(epochBigZ).append('\n');
             }
             sb.append("auto_relocate=").append(autoRelocate).append('\n');
             sb.append("relocate_margin=").append((long) relocateMargin).append('\n');
@@ -100,21 +100,31 @@ public final class FarConfig {
     }
 
     public static void setEpoch(double x, double z) {
-        epochX = x;
-        epochZ = z;
+        epochBigX = java.math.BigDecimal.valueOf(x).toBigInteger();
+        epochBigZ = java.math.BigDecimal.valueOf(z).toBigInteger();
         save();
     }
 
+    /** Exact epoch (BigInteger). */
+    public static java.math.BigInteger epochBigX() {
+        return epochBigX;
+    }
+
+    /** Exact epoch (BigInteger). */
+    public static java.math.BigInteger epochBigZ() {
+        return epochBigZ;
+    }
+
     public static boolean hasEpoch() {
-        return !Double.isNaN(epochX);
+        return epochBigX != null;
     }
 
     public static double epochX() {
-        return epochX;
+        return epochBigX != null ? epochBigX.doubleValue() : Double.NaN;
     }
 
     public static double epochZ() {
-        return epochZ;
+        return epochBigZ != null ? epochBigZ.doubleValue() : Double.NaN;
     }
 
     public static boolean autoRelocate() {
