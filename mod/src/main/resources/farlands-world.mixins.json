@@ -15,7 +15,8 @@
         "FunctionContextMixin",
         "ChunkGeneratorMixin",
         "TreeFeatureMixin",
-        "MineshaftSkipMixin"
+        "MineshaftSkipMixin",
+        "FlowingFluidRateLimitMixin"
     ],
     "injectors": { "defaultRequire": 1 }
 }
