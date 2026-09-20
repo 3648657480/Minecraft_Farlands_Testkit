@@ -46,7 +46,20 @@ public class MinecraftClientRelocateMixin {
             mc.clearClientLevel(new GenericMessageScreen(Component.literal("Far Lands: relocating world...")));
             System.out.println("[FarLands] translating world by (" + req.dx + "," + req.dz + ")");
             System.out.flush();
-            int n = Main.translate(worldPath, req.dx, req.dz);
+            int n = 0;
+            long remainingX = req.dx;
+            long remainingZ = req.dz;
+            while (remainingX != 0 || remainingZ != 0) {
+                int stepX = (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, remainingX));
+                int stepZ = (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, remainingZ));
+                n += Main.translate(worldPath, stepX, stepZ);
+                remainingX -= stepX;
+                remainingZ -= stepZ;
+                if (remainingX != 0 || remainingZ != 0) {
+                    System.out.println("[FarLands] multi-step relocate: " + remainingX + "," + remainingZ + " chunks left");
+                    System.out.flush();
+                }
+            }
             System.out.println("[FarLands] translated " + n + " chunks, reloading world '" + levelId + "'");
             System.out.flush();
             if (!Double.isNaN(req.newEpochX)) {

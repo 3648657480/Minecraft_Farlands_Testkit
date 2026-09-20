@@ -10,17 +10,17 @@ package com.farlands.g1;
 public final class FarRelocate {
 
     public static final class Request {
-        public final int dx;
-        public final int dz;
+        public final long dx;
+        public final long dz;
         /** New epoch to persist after the shift (NaN = keep current). */
         public final double newEpochX;
         public final double newEpochZ;
 
-        public Request(int dx, int dz) {
+        public Request(long dx, long dz) {
             this(dx, dz, Double.NaN, Double.NaN);
         }
 
-        public Request(int dx, int dz, double newEpochX, double newEpochZ) {
+        public Request(long dx, long dz, double newEpochX, double newEpochZ) {
             this.dx = dx;
             this.dz = dz;
             this.newEpochX = newEpochX;

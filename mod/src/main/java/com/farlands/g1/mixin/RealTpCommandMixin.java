@@ -45,21 +45,16 @@ public class RealTpCommandMixin {
                             && (Math.abs(localX) > limit || Math.abs(localZ) > limit)) {
                             double newEpochX = Math.floor(pos.x / 16.0) * 16.0;
                             double newEpochZ = Math.floor(pos.z / 16.0) * 16.0;
-                            double shiftChunksX = (FarProjection.epochBlockX() - newEpochX) / 16.0;
-                            double shiftChunksZ = (FarProjection.epochBlockZ() - newEpochZ) / 16.0;
-                            if (Math.abs(shiftChunksX) > Integer.MAX_VALUE
-                                || Math.abs(shiftChunksZ) > Integer.MAX_VALUE) {
-                                ctx.getSource().sendFailure(net.minecraft.network.chat.Component.literal(
-                                    "距离过大，单次重定位无法覆盖（需要多步）。"));
-                                return 0;
-                            }
+                            long shiftChunksX = (long) ((FarProjection.epochBlockX() - newEpochX) / 16.0);
+                            long shiftChunksZ = (long) ((FarProjection.epochBlockZ() - newEpochZ) / 16.0);
                             com.farlands.g1.FarRelocate.pending = new com.farlands.g1.FarRelocate.Request(
-                                (int) shiftChunksX, (int) shiftChunksZ, newEpochX, newEpochZ);
+                                shiftChunksX, shiftChunksZ, newEpochX, newEpochZ);
                             ctx.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal(
                                 "目标超出当前窗口，正在重定位世界（新 epoch="
-                                + (long) newEpochX + "," + (long) newEpochZ + "）..."), false);
+                                + (long) newEpochX + "," + (long) newEpochZ + "，平移 "
+                                + shiftChunksX + " chunks）..."), false);
                             System.out.println("[FarLands] /realtp out-of-window -> relocate: shift=("
-                                + (long) shiftChunksX + "," + (long) shiftChunksZ
+                                + shiftChunksX + "," + shiftChunksZ
                                 + ") newEpoch=(" + newEpochX + "," + newEpochZ + ")");
                             System.out.flush();
                             return 1;
