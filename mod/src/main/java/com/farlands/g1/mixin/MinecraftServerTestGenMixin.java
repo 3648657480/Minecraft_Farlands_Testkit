@@ -143,7 +143,13 @@ public abstract class MinecraftServerTestGenMixin {
             StringBuilder sb = new StringBuilder();
             sb.append("[FarLands-Test] gen OK region (").append(cx).append(",").append(cz)
                 .append(")+").append(n).append("x").append(n).append(" last=(").append(cx + n - 1)
-                .append(",").append(cz + n - 1).append(") topY=").append(top).append(" timeMs=").append(genMs);
+                .append(",").append(cz + n - 1).append(") topY=").append(top).append(" timeMs=").append(genMs)
+                .append(" biome=").append(chunk.getNoiseBiome(8, 60, 8).unwrapKey().map(Object::toString).orElse("?"))
+                .append(" b(8,60,8)=").append(chunk.getBlockState(new net.minecraft.core.BlockPos(cx * 16 + 8, 60, cz * 16 + 8)))
+                .append(" topX8=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 8, 8))
+                .append(" topX9=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 9, 8))
+                .append(" topX12=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 12, 8))
+                .append(" topZ8=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 8, 9));
             System.out.println(sb);
             if (chunk != null) {
                 int nonEmpty = 0;
