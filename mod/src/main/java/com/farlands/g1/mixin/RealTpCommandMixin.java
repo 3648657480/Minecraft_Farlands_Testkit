@@ -78,6 +78,12 @@ public class RealTpCommandMixin {
         }
         BigInteger epochX = FarProjection.epochBigX();
         BigInteger epochZ = FarProjection.epochBigZ();
+        if (!FarProjection.isEpochActive()) {
+            source.sendFailure(Component.literal(
+                "当前世界未启用 epoch（缺少 farlands.properties）。真实坐标传送只在 epoch 世界可用；"
+                + "普通世界请用 /tp（local 坐标）。"));
+            return 0;
+        }
         BigInteger localX = realX.subtract(epochX);
         BigInteger localZ = realZ.subtract(epochZ);
         BigInteger limit = BigInteger.valueOf(2_147_483_647L - 100_000L);
