@@ -105,6 +105,13 @@ public final class FarConfig {
         save();
     }
 
+    /** Exact epoch setter (BigInteger). */
+    public static void setEpoch(java.math.BigInteger x, java.math.BigInteger z) {
+        epochBigX = x;
+        epochBigZ = z;
+        save();
+    }
+
     /** Exact epoch (BigInteger). */
     public static java.math.BigInteger epochBigX() {
         return epochBigX;

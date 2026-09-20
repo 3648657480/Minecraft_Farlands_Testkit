@@ -87,7 +87,9 @@ public class MinecraftServerRelocateMixin {
                 return;
             }
             FarRelocate.pending = new FarRelocate.Request(
-                (int) shiftX, (int) shiftZ, newEpochX, newEpochZ);
+                (long) shiftX, (long) shiftZ,
+                java.math.BigDecimal.valueOf(newEpochX).toBigInteger(),
+                java.math.BigDecimal.valueOf(newEpochZ).toBigInteger(), false);
             lastRelocateAt = now;
             System.out.println("[FarLands] auto-relocate: player local=(" + (long) x + "," + (long) z
                 + ") near window edge -> new epoch=(" + (long) newEpochX + "," + (long) newEpochZ

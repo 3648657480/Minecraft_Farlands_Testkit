@@ -1,5 +1,7 @@
 package com.farlands.g1;
 
+import java.math.BigInteger;
+
 /**
  * E3: shared state for the auto-relocate flow.
  *
@@ -12,9 +14,9 @@ public final class FarRelocate {
     public static final class Request {
         public final long dx;
         public final long dz;
-        /** New epoch to persist after the shift (NaN = keep current). */
-        public final double newEpochX;
-        public final double newEpochZ;
+        /** Exact new epoch (BigInteger; null = keep current). */
+        public final BigInteger newEpochBigX;
+        public final BigInteger newEpochBigZ;
         /**
          * true = archive the current epoch's chunks and restore the target
          * epoch's archive (if any) - used by /realtp; false = shift the save
@@ -24,18 +26,18 @@ public final class FarRelocate {
         public final boolean archive;
 
         public Request(long dx, long dz) {
-            this(dx, dz, Double.NaN, Double.NaN, false);
+            this(dx, dz, null, null, false);
         }
 
-        public Request(long dx, long dz, double newEpochX, double newEpochZ) {
-            this(dx, dz, newEpochX, newEpochZ, false);
+        public Request(long dx, long dz, BigInteger newEpochBigX, BigInteger newEpochBigZ) {
+            this(dx, dz, newEpochBigX, newEpochBigZ, false);
         }
 
-        public Request(long dx, long dz, double newEpochX, double newEpochZ, boolean archive) {
+        public Request(long dx, long dz, BigInteger newEpochBigX, BigInteger newEpochBigZ, boolean archive) {
             this.dx = dx;
             this.dz = dz;
-            this.newEpochX = newEpochX;
-            this.newEpochZ = newEpochZ;
+            this.newEpochBigX = newEpochBigX;
+            this.newEpochBigZ = newEpochBigZ;
             this.archive = archive;
         }
     }

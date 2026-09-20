@@ -59,9 +59,9 @@ public class MinecraftClientRelocateMixin {
             }
             System.out.println("[FarLands] translated " + n + " chunks, reloading world '" + levelId + "'");
             System.out.flush();
-            if (!Double.isNaN(req.newEpochX)) {
-                com.farlands.g1.util.FarConfig.setEpoch(req.newEpochX, req.newEpochZ);
-                System.out.println("[FarLands] epoch persisted: (" + req.newEpochX + "," + req.newEpochZ + ")");
+            if (req.newEpochBigX != null) {
+                com.farlands.g1.util.FarConfig.setEpoch(req.newEpochBigX, req.newEpochBigZ);
+                System.out.println("[FarLands] epoch persisted: (" + req.newEpochBigX + "," + req.newEpochBigZ + ")");
                 System.out.flush();
             }
             mc.createWorldOpenFlows().openWorld(levelId, () -> {});
@@ -80,8 +80,8 @@ public class MinecraftClientRelocateMixin {
      */
     private static int archiveRelocate(Path worldPath, com.farlands.g1.FarRelocate.Request req) {
         Path epochsDir = worldPath.resolve("farlands_epochs");
-        String oldKey = epochKey(com.farlands.g1.util.FarConfig.epochX(), com.farlands.g1.util.FarConfig.epochZ());
-        String newKey = epochKey(req.newEpochX, req.newEpochZ);
+        String oldKey = epochKey(com.farlands.g1.util.FarConfig.epochBigX(), com.farlands.g1.util.FarConfig.epochBigZ());
+        String newKey = epochKey(req.newEpochBigX, req.newEpochBigZ);
         int moved = 0;
         // 1) archive the current epoch
         moved += moveChunks(worldPath, epochsDir.resolve(oldKey));
@@ -94,8 +94,16 @@ public class MinecraftClientRelocateMixin {
         return moved;
     }
 
-    private static String epochKey(double x, double z) {
-        return "e_" + (long) x + "_" + (long) z;
+    private static String epochKey(java.math.BigInteger x, java.math.BigInteger z) {
+        return "e_" + keyPart(x) + "_" + keyPart(z);
+    }
+
+    /** Short, unique, filename-safe epoch key part (leading digits + length). */
+    private static String keyPart(java.math.BigInteger v) {
+        String s = v.toString();
+        String sign = s.startsWith("-") ? "n" : "p";
+        String digits = sign.equals("n") ? s.substring(1) : s;
+        return sign + digits.substring(0, Math.min(12, digits.length())) + "L" + digits.length();
     }
 
     /** moves dimensions/.../{region,entities}/*.mca into the archive dir */
