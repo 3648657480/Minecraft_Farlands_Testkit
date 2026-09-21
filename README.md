@@ -1,10 +1,11 @@
 # FarLands G1
 
-> **玩家使用指南：[docs/USAGE.md](docs/USAGE.md)**（安装/命令/配置/现象坐标）
+> [中文说明](README.zh-CN.md) | **English**
 
+Minecraft 26.2 Far Lands toolset: real-coordinate exploration up to 2^63
+(eventually 1e306) - no scaling, no fake coordinates, real terrain.
 
-Minecraft 26.2 Far Lands patch toolset 鈥?removes the 30M coordinate limit so the
-world keeps working up to the 64-bit integer boundary.
+**Player guides**: [English](docs/USAGE.en.md) | [中文](docs/USAGE.md)
 
 ## What this project is (and is not)
 
@@ -15,6 +16,24 @@ contains **no Minecraft source code, no decompiled output, and no game files**.
 The patcher reads class bytes from a Minecraft client jar **you supply
 yourself** (your own legitimately obtained copy, downloaded from Mojang) and
 rewrites them in place on your machine.
+
+## Features
+
+- **Playable past the 2^31 boundary**: continuous terrain, working AABB,
+  selection, breaking and placing (E4)
+- **Arbitrary-distance travel**: `/realtp` with real coordinates (works in
+  command blocks), archive-style relocation - the current epoch is archived,
+  the target epoch restored, the middle is never generated (E5)
+- **BigInteger exact coordinates**: the epoch is stored exactly and parsed from
+  arbitrary-precision strings (`/realtp @p 1e1000 100 0` works); F3 shows a
+  `Real (exact)` line
+- **Automatic world configuration**: a fresh world auto-creates
+  `world/farlands.properties` (epoch = origin) - live out of the box, no JVM
+  flags
+- **Distance phenomena verified**: 2^53 terrain stop point, 2^63 far lands
+  (2048-block homogeneous mosaic), 1.8e308 water-column world
+- **Fluid tick rate limit**: guards against the recursive fluid-tick explosion
+  found by stress testing
 
 ## Requirements
 
@@ -27,54 +46,53 @@ rewrites them in place on your machine.
 gradlew clean build
 ```
 
-Produces:
-
-- `patcher-cli/build/libs/patcher-cli-1.0-SNAPSHOT.jar` 鈥?standalone patcher
-  (ASM bundled, no other dependencies)
-- `mod/build/libs/farlands-g1-mod-1.0-SNAPSHOT.jar` 鈥?the runtime mod
-
-## Patch your client jar
-
-```
-java -jar patcher-cli/build/libs/patcher-cli-1.0-SNAPSHOT.jar \
-    --in <path-to-your-minecraft-client.jar> \
-    --out <path-to-patched.jar>
-```
-
-The tool patches 13 classes and prints a report. It never downloads or embeds
-Minecraft content; the input jar stays untouched.
+Produces `patcher-cli/build/libs/patcher-cli-1.0-SNAPSHOT.jar` and
+`mod/build/libs/farlands-g1-mod-1.0-SNAPSHOT.jar`.
 
 ## Install
 
-1. Replace the client jar in your launcher profile with `<path-to-patched.jar>`
-   (keep the profile's version id, rename the file accordingly).
-2. Put `mod/build/libs/farlands-g1-mod-1.0-SNAPSHOT.jar` into the profile's
-   `mods` folder (Fabric Loader profile).
-3. Launch the game.
+1. Patch your own client jar:
+```powershell
+java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true" `
+  -jar patcher-cli-1.0-SNAPSHOT.jar --in <your-26.2.jar> --out <fork.jar>
+```
+2. Use the fork jar as the version jar (back up the original)
+3. Put the mod jar into `mods/`
+4. Launch - no JVM flags needed
 
-The patched client and the mod must be used together: the patched classes
-call helpers shipped in the mod, and the mod's mixins expect the patched
-game.
+See [docs/USAGE.en.md](docs/USAGE.en.md) for the full player guide.
 
-## Development
+## In-game
 
-The same patch set is applied automatically at build time by the Loom
-`MinecraftJarProcessor` registered in `mod/build.gradle`
-(`com.farlands.g1.loom.G1JarProcessor`, defined in `buildSrc`). Edit a patch
-in `patcher-core` and run `gradlew :mod:build` 鈥?the Minecraft jar used for
-compilation is re-patched from the current sources.
+```
+/realtp <x> <y> <z>                teleport yourself using real coordinates
+/realtp <targets> <x> <y> <z>      teleport entities (@p/@e/...; command blocks OK)
+```
 
-## Legal notes
+Out-of-window targets trigger an archive relocation: the current epoch's chunks
+move to `world/farlands_epochs/`, the target epoch's archive is restored if it
+exists, and the middle is simply never generated. The player lands at local
+origin of the new epoch - same real coordinates, seamless terrain.
 
-- Minecraft is a trademark and copyright of Mojang Studios / Microsoft. This
-  project is an independent modification tool and is not affiliated with or
-  endorsed by Mojang.
-- The patcher transforms a jar on the user's machine; it does not download,
-  embed, or redistribute any Minecraft content.
-- The floating-origin and epoch-correction techniques follow the approach
-  pioneered by [INF32768/UltimateScaler](https://github.com/INF32768/UltimateScaler)
-  (MIT License) 鈥?used with gratitude, not copied code.
+## Distance phenomena
+
+| Real coordinate | Phenomenon |
+|---|---|
+| 2^53 (9.007e15) | Terrain stop point (ulp 2, adjacent samples merge) |
+| 2^63 (9.223e18) | Far lands: 128-chunk homogeneous block mosaic |
+| 1.8e308 | Water-column world (horizontal collapse + normal vertical) |
+
+Phenomenon zones are sightseeing areas - the geometry is extremely heavy.
+
+## Documentation
+
+- [docs/USAGE.en.md](docs/USAGE.en.md) / [docs/USAGE.md](docs/USAGE.md) - player guides
+- [docs/REVIEW.md](docs/REVIEW.md) - architecture review (coordinate domains, mechanisms)
+- [docs/ROADMAP.md](docs/ROADMAP.md) - milestones and lessons
+- [docs/WORKFLOW.md](docs/WORKFLOW.md) - build/test/deploy workflow
+- [docs/E-LINE-DESIGN.md](docs/E-LINE-DESIGN.md) - E line design notes
 
 ## License
 
-MIT 鈥?see LICENSE.txt.
+MIT. This project ships no Minecraft assets; all Minecraft code is patched
+locally on the user's machine from the user's own copy.
