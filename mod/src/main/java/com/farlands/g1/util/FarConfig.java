@@ -28,6 +28,13 @@ public final class FarConfig {
 
     /** Loads the config for a world; call before the epoch is applied. */
     public static void load(Path worldDir) {
+        // reset cross-world static state first: a previous world's epoch must
+        // never leak into a freshly created one
+        epochBigX = null;
+        epochBigZ = null;
+        autoRelocate = true;
+        relocateMargin = 100_000.0;
+        com.farlands.g1.util.FarProjection.resetEpoch();
         file = worldDir.resolve("farlands.properties");
         Properties p = new Properties();
         if (Files.isRegularFile(file)) {

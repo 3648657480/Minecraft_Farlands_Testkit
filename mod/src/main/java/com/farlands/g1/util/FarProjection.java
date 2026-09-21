@@ -87,6 +87,18 @@ public final class FarProjection {
         epochInitialized = true;
     }
 
+    /**
+     * Clears the epoch state (called when a world unloads/loads) so a
+     * previous world's epoch never leaks into a freshly created one.
+     */
+    public static void resetEpoch() {
+        epochBigX = java.math.BigInteger.ZERO;
+        epochBigZ = java.math.BigInteger.ZERO;
+        epochBlockX = 0.0;
+        epochBlockZ = 0.0;
+        epochInitialized = false;
+    }
+
     /** Exact epoch origin (BigInteger). */
     public static java.math.BigInteger epochBigX() {
         return epochBigX;
