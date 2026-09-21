@@ -1,6 +1,9 @@
 # FarLands G1
 
-Minecraft 26.2 Far Lands patch toolset — removes the 30M coordinate limit so the
+> **玩家使用指南：[docs/USAGE.md](docs/USAGE.md)**（安装/命令/配置/现象坐标）
+
+
+Minecraft 26.2 Far Lands patch toolset 鈥?removes the 30M coordinate limit so the
 world keeps working up to the 64-bit integer boundary.
 
 ## What this project is (and is not)
@@ -26,9 +29,9 @@ gradlew clean build
 
 Produces:
 
-- `patcher-cli/build/libs/patcher-cli-1.0-SNAPSHOT.jar` — standalone patcher
+- `patcher-cli/build/libs/patcher-cli-1.0-SNAPSHOT.jar` 鈥?standalone patcher
   (ASM bundled, no other dependencies)
-- `mod/build/libs/farlands-g1-mod-1.0-SNAPSHOT.jar` — the runtime mod
+- `mod/build/libs/farlands-g1-mod-1.0-SNAPSHOT.jar` 鈥?the runtime mod
 
 ## Patch your client jar
 
@@ -58,7 +61,7 @@ game.
 The same patch set is applied automatically at build time by the Loom
 `MinecraftJarProcessor` registered in `mod/build.gradle`
 (`com.farlands.g1.loom.G1JarProcessor`, defined in `buildSrc`). Edit a patch
-in `patcher-core` and run `gradlew :mod:build` — the Minecraft jar used for
+in `patcher-core` and run `gradlew :mod:build` 鈥?the Minecraft jar used for
 compilation is re-patched from the current sources.
 
 ## Legal notes
@@ -70,8 +73,8 @@ compilation is re-patched from the current sources.
   embed, or redistribute any Minecraft content.
 - The floating-origin and epoch-correction techniques follow the approach
   pioneered by [INF32768/UltimateScaler](https://github.com/INF32768/UltimateScaler)
-  (MIT License) — used with gratitude, not copied code.
+  (MIT License) 鈥?used with gratitude, not copied code.
 
 ## License
 
-MIT — see LICENSE.txt.
+MIT 鈥?see LICENSE.txt.
