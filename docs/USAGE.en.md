@@ -210,6 +210,23 @@ experiment).
 Disposition: none (working rule). Conclusions from experiments violating any
 of the above are void.
 
+### R10: Respect external records; conclusions are condition-specific
+
+Prohibited: claiming to overturn, correct or refute community/official records
+(e.g. the Minecraft Wiki); presenting this project's results as "more
+accurate" or as general conclusions.
+
+Reason: external records reflect their own experimental conditions (version,
+implementation, measurement method); this project's data comes from its own
+pipeline (epoch/local domain) and the two are not directly comparable.
+Overreaching claims are neither respectful nor rigorous.
+
+Verification: applied (the EXPERIMENTS.md phenomenon table is phrased as "a
+specific result under specific experimental conditions", 2026-09).
+
+Disposition: none (writing rule). Every result must state its experimental
+conditions and declare that it does not refute or correct external records.
+
 ---
 
 ## 4. Rationale

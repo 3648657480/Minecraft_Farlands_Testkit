@@ -26,6 +26,13 @@ marker, terrain stats); fresh world only; one variable per round; expectation
 before run; data-based conclusions; numbered records. Conclusions from
 experiments violating any of these are void.
 
+## R10 — Respect external records
+
+Never claim to overturn, correct or refute community or official records
+(e.g. the Minecraft Wiki). Every result is "a specific result under specific
+experimental conditions" and must state those conditions. No "more accurate"
+claims.
+
 ## The five iron rules (project history)
 
 1. Establish the domain ledger before touching anything.
