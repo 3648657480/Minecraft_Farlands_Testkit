@@ -43,12 +43,26 @@ tools\server-test-nodel.ps1 -Tag "名字" -TestGen "0,0"
 **注意**：rig = dedicated（无客户端流程）。客户端特有路径（prepare_spawn/渲染/F3）
 rig 覆盖不到——**无头 ≠ 实际**。
 
+### 实验基建（F0/S0）
+
+```powershell
+# 确定性生成固定区块集 + WG 指纹（exp-F0-4-M1.log 等）
+tools\exp-run.ps1 -Tag F0-x -OutDir <证据目录> -TestGen "0,0;62,62;..." `
+  -Rig mod|vanilla [-Delay 300] [-Settle 400] [-BgThreads 1] [-Extra "-Dfarlands.xxx=..."]
+
+# 区块字节对比（粗筛；含种子/出生点校验、合并哈希）
+.\gradlew.bat :mod:worldDiff -PworldA=<世界A> -PworldB=<世界B> -Preport=<报告> --no-daemon
+```
+
+- `vanilla-rig` 子项目 = 原版参照（无补丁 jar + 仅测量桩）
+- 指纹行：`[FarLands-Test] ... wgHash=surf=... floor=... biome=...`（生成期确定性指标）
+
 ## 客户端测试
 
 1. 部署 mod jar 到 `D:\Minecraft\.minecraft\versions\26.2-Fabric 0.19.3_fork\mods\`
 2. PCL 启动（epoch 从世界配置读，无需 JVM 参数）
 3. 日志：fork 目录 `logs/latest.log`（grep `[FarLands`）
-4. 游戏内：`/realtp`（真实坐标）+ F3（Real position / Real (exact)）
+4. 游戏内：`/realtp`（真实坐标）+ F3（XYZ/Block/Chunk 真实坐标 + `Local (in-epoch)` + `Epoch/Laps (2^31)` + `Real double ULP`）
 
 ## 游戏内工具
 
@@ -96,6 +110,7 @@ relocate_margin=100000
 C:\Project-G1\
 ├─ patcher-core\     字节码补丁（ChunkPosEpochPatch=标记only 等）
 ├─ patcher-cli\      补丁 CLI
+├─ vanilla-rig\      原版参照（无补丁 jar + 仅测量桩）
 ├─ mod\              Fabric mod（mixin 分类）
 │   └─ src/main/resources\
 │       ├─ farlands-core.mixins.json      坐标容器/投影
@@ -106,12 +121,17 @@ C:\Project-G1\
 │       ├─ farlands-test.mixins.json      无头探针
 │       └─ farlands-client.mixins.json    客户端渲染 + 重定位
 ├─ tools\
-│   ├─ server-test.ps1      无头 rig（删世界）
+│   ├─ server-test.ps1       无头 rig（删世界）
 │   ├─ server-test-nodel.ps1 无头 rig（保留世界）
-│   └─ chunk-translator\    存档平移工具
+│   ├─ exp-run.ps1           实验运行（确定性协议 + WG 指纹）
+│   ├─ world-diff\           区块字节对比工具
+│   └─ chunk-translator\     存档平移工具
 └─ docs\
-    ├─ ROADMAP.md           路线图/里程碑/教训
-    ├─ E-LINE-DESIGN.md     E 线设计（部分已被实现超越）
-    ├─ REVIEW.md            基础知识复习（当前架构版）
-    └─ WORKFLOW.md          本文件
+    ├─ USAGE(.en).md         玩家手册（红线 R1-R10）
+    ├─ CONFIG(.en).md        配置参考 + 预设组合
+    ├─ EXPERIMENTS.md        实验协议 + 远域现象表
+    ├─ ROADMAP.md            路线图/里程碑/教训
+    ├─ REVIEW.md             基础知识复习（当前架构版）
+    ├─ WORKFLOW.md           本文件
+    └─ archive\              历史设计文档（E 线、宽化容器）
 ```
