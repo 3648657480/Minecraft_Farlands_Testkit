@@ -102,9 +102,9 @@ public final class F3Helper {
             java.math.BigInteger ex = com.farlands.g1.util.FarProjection.epochBigX();
             java.math.BigInteger ez = com.farlands.g1.util.FarProjection.epochBigZ();
             if (exactMode()) {
-                out.add(String.format(Locale.ROOT, "Local (epoch内): (%.3f, %.3f, %.3f)", x, y, z));
+                out.add(String.format(Locale.ROOT, "Local (in-epoch): (%.3f, %.3f, %.3f)", x, y, z));
                 out.add("Epoch: " + abbreviate(ex) + " / " + abbreviate(ez)
-                    + "  圈数(2^31): " + laps(ex) + " / " + laps(ez));
+                    + "  Laps (2^31): " + laps(ex) + " / " + laps(ez));
                 out.add(String.format(Locale.ROOT, "Real double ULP: +-%.4g  (block coords quantize to this)",
                     Math.ulp(com.farlands.g1.util.FarProjection.epochBlockX())));
             } else {
