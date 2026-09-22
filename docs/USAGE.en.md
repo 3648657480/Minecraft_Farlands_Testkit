@@ -184,6 +184,32 @@ Disposition: none (working rule). Write expected results before each
 experiment and check them after; never deploy on a failed build; one variable
 per round; verify the code is actually running first.
 
+### R9: Deep terrain-generator debugging domain (noise / density-function level)
+
+Preconditions (all required before any experiment):
+
+1. **Baseline first**: record the unmodified baseline (fixed seed, fixed
+   coordinate set, version marker, terrain stats).
+2. **Fresh world**: experiments only in a fresh world (R5); never in an
+   irreplaceable save.
+3. **One variable**: change one parameter per round (R8).
+4. **Expectation first**: write the hypothesis and expected result before
+   running.
+5. **Data-based conclusions**: conclusions require measurements (height/block
+   stats/DF output/logs); "it looks different" is not evidence.
+6. **Numbered records**: log every experiment (id, parameter, seed,
+   coordinates, expected, observed, conclusion, files).
+
+Reason: noise parameters affect the whole generation chain and are not
+reliably judged by eye; without a baseline there is no comparison;
+unrigorous experiments produce wrong conclusions and waste time.
+
+Verification: pending (baseline process to be established before the first
+experiment).
+
+Disposition: none (working rule). Conclusions from experiments violating any
+of the above are void.
+
 ---
 
 ## 4. Rationale

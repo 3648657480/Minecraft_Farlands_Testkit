@@ -19,6 +19,13 @@ corruption. Exaggeration devalues the real red lines.
 - Log shared state before touching it.
 - Public repo: only usable code is committed.
 
+## R9 — Deep terrain-generator debugging domain (noise / DF level)
+
+Before any experiment: baseline first (fixed seed, fixed coordinates, version
+marker, terrain stats); fresh world only; one variable per round; expectation
+before run; data-based conclusions; numbered records. Conclusions from
+experiments violating any of these are void.
+
 ## The five iron rules (project history)
 
 1. Establish the domain ledger before touching anything.
