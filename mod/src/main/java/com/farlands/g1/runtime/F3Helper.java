@@ -28,22 +28,89 @@ public final class F3Helper {
     private F3Helper() {
     }
 
+    /** True when the epoch origin is beyond exact double integers. */
+    private static boolean exactMode() {
+        java.math.BigInteger ex = com.farlands.g1.util.FarProjection.epochBigX();
+        java.math.BigInteger ez = com.farlands.g1.util.FarProjection.epochBigZ();
+        return ex.abs().bitLength() > 53 || ez.abs().bitLength() > 53;
+    }
+
+    /** XYZ line: real coordinates, exact beyond double precision. */
+    public static String xyzLine(Entity entity) {
+        double x = entity.getX();
+        double y = entity.getY();
+        double z = entity.getZ();
+        if (com.farlands.g1.util.FarProjection.isEpochActive() && exactMode()) {
+            java.math.BigInteger bx = com.farlands.g1.util.FarProjection.realBlockBigX((long) Math.floor(x));
+            java.math.BigInteger bz = com.farlands.g1.util.FarProjection.realBlockBigZ((long) Math.floor(z));
+            return "XYZ (real): " + abbreviate(bx) + " / " + (long) Math.floor(y) + " / " + abbreviate(bz);
+        }
+        return String.format(Locale.ROOT, "XYZ: %.3f / %.5f / %.3f",
+            com.farlands.g1.util.FarProjection.displayX(x), y,
+            com.farlands.g1.util.FarProjection.displayZ(z));
+    }
+
+    /** Block line: real block coordinates, exact beyond double precision. */
+    public static String blockLine(Entity entity) {
+        double x = entity.getX();
+        double y = entity.getY();
+        double z = entity.getZ();
+        if (com.farlands.g1.util.FarProjection.isEpochActive() && exactMode()) {
+            java.math.BigInteger bx = com.farlands.g1.util.FarProjection.realBlockBigX((long) Math.floor(x));
+            java.math.BigInteger bz = com.farlands.g1.util.FarProjection.realBlockBigZ((long) Math.floor(z));
+            return "Block (real): " + abbreviate(bx) + " / " + (long) Math.floor(y) + " / " + abbreviate(bz);
+        }
+        return String.format(Locale.ROOT, "Block: %.6g %.0f %.6g",
+            com.farlands.g1.util.FarProjection.displayX(Math.floor(x)), y,
+            com.farlands.g1.util.FarProjection.displayZ(Math.floor(z)));
+    }
+
+    /** Chunk line: real chunk coordinates, exact beyond double precision. */
+    public static String chunkLine(Entity entity) {
+        double x = entity.getX();
+        double z = entity.getZ();
+        if (com.farlands.g1.util.FarProjection.isEpochActive() && exactMode()) {
+            java.math.BigInteger cx = floorDiv16(com.farlands.g1.util.FarProjection.realBlockBigX((long) Math.floor(x)));
+            java.math.BigInteger cz = floorDiv16(com.farlands.g1.util.FarProjection.realBlockBigZ((long) Math.floor(z)));
+            return "Chunk (real): " + abbreviate(cx) + " / " + (long) Math.floor(entity.getY()) + " / " + abbreviate(cz);
+        }
+        return String.format(Locale.ROOT, "Chunk: %.6g %.0f %.6g",
+            com.farlands.g1.util.FarProjection.displayX(Math.floor(x)) / 16.0,
+            Math.floor(entity.getY()),
+            com.farlands.g1.util.FarProjection.displayZ(Math.floor(z)) / 16.0);
+    }
+
+    /** Floor division by 16 for BigInteger (no floorDiv dependency). */
+    private static java.math.BigInteger floorDiv16(java.math.BigInteger v) {
+        java.math.BigInteger[] qr = v.divideAndRemainder(java.math.BigInteger.valueOf(16));
+        return qr[1].signum() < 0 ? qr[0].subtract(java.math.BigInteger.ONE) : qr[0];
+    }
+
+    /** Epoch lap count in 2^31-block windows (and the remainder inside the lap). */
+    private static String laps(java.math.BigInteger epoch) {
+        java.math.BigInteger window = java.math.BigInteger.ONE.shiftLeft(31);
+        java.math.BigInteger[] qr = epoch.divideAndRemainder(window);
+        return qr[0] + " (+" + qr[1] + ")";
+    }
+
     public static List<String> extraLines(Minecraft mc, Level level, Entity entity) {
         List<String> out = new ArrayList<>();
         double x = entity.getX();
         double y = entity.getY();
         double z = entity.getZ();
         if (com.farlands.g1.util.FarProjection.isEpochActive()) {
-            out.add(String.format(Locale.ROOT, "Real position: (%.3f, %.3f, %.3f)   [epoch %.0f, %.0f]",
-                com.farlands.g1.util.FarProjection.realBlockX((int) Math.floor(x)), y,
-                com.farlands.g1.util.FarProjection.realBlockZ((int) Math.floor(z)),
-                com.farlands.g1.util.FarProjection.epochBlockX(),
-                com.farlands.g1.util.FarProjection.epochBlockZ()));
-            try {
-                java.math.BigInteger bx = com.farlands.g1.util.FarProjection.realBlockBigX((long) Math.floor(x));
-                java.math.BigInteger bz = com.farlands.g1.util.FarProjection.realBlockBigZ((long) Math.floor(z));
-                out.add("Real (exact): " + abbreviate(bx) + " / " + (long) y + " / " + abbreviate(bz));
-            } catch (Throwable ignored) {
+            java.math.BigInteger ex = com.farlands.g1.util.FarProjection.epochBigX();
+            java.math.BigInteger ez = com.farlands.g1.util.FarProjection.epochBigZ();
+            if (exactMode()) {
+                out.add(String.format(Locale.ROOT, "Local (epoch内): (%.3f, %.3f, %.3f)", x, y, z));
+                out.add("Epoch: " + abbreviate(ex) + " / " + abbreviate(ez)
+                    + "  圈数(2^31): " + laps(ex) + " / " + laps(ez));
+                out.add(String.format(Locale.ROOT, "Real double ULP: +-%.4g  (block coords quantize to this)",
+                    Math.ulp(com.farlands.g1.util.FarProjection.epochBlockX())));
+            } else {
+                out.add(String.format(Locale.ROOT, "Real position: (%.3f, %.3f, %.3f)   [epoch %s, %s]",
+                    com.farlands.g1.util.FarProjection.realBlockX((int) Math.floor(x)), y,
+                    com.farlands.g1.util.FarProjection.realBlockZ((int) Math.floor(z)), ex, ez));
             }
         }
         out.add(String.format(Locale.ROOT, "Float precision (ULP): +-%.4g / +-%.4g / +-%.4g",
@@ -60,7 +127,7 @@ public final class F3Helper {
                 int bx = (int) Math.floor(x);
                 int by = (int) Math.floor(y);
                 int bz = (int) Math.floor(z);
-                DensityFunction.FunctionContext ctx = new DensityFunction.SinglePointContext(bx, by, bz);
+                DensityFunction.FunctionContext ctx = new RealContext(bx, by, bz);
                 out.add(String.format(Locale.ROOT, "Continents %.4f  Erosion %.4f  Depth %.4f",
                     router.continents().compute(ctx), router.erosion().compute(ctx), router.depth().compute(ctx)));
                 out.add(String.format(Locale.ROOT, "Temperature %.4f  Vegetation %.4f  Ridges %.4f",

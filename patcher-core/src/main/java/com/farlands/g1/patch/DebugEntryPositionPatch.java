@@ -152,20 +152,26 @@ public final class DebugEntryPositionPatch implements ClassPatch {
         il.add(new InsnNode(Opcodes.ICONST_5));
         il.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/String"));
 
-        // 0: XYZ
+        // 0: XYZ (real coordinates; exact beyond double precision)
         il.add(new InsnNode(Opcodes.DUP));
         il.add(new InsnNode(Opcodes.ICONST_0));
-        il.add(xyzFormat());
+        il.add(new VarInsnNode(Opcodes.ALOAD, 6));
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/runtime/F3Helper", "xyzLine",
+            "(Lnet/minecraft/world/entity/Entity;)Ljava/lang/String;", false));
         il.add(new InsnNode(Opcodes.AASTORE));
-        // 1: Block
+        // 1: Block (real)
         il.add(new InsnNode(Opcodes.DUP));
         il.add(new InsnNode(Opcodes.ICONST_1));
-        il.add(blockFormat());
+        il.add(new VarInsnNode(Opcodes.ALOAD, 6));
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/runtime/F3Helper", "blockLine",
+            "(Lnet/minecraft/world/entity/Entity;)Ljava/lang/String;", false));
         il.add(new InsnNode(Opcodes.AASTORE));
-        // 2: Chunk
+        // 2: Chunk (real)
         il.add(new InsnNode(Opcodes.DUP));
         il.add(new InsnNode(Opcodes.ICONST_2));
-        il.add(chunkFormat());
+        il.add(new VarInsnNode(Opcodes.ALOAD, 6));
+        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/runtime/F3Helper", "chunkLine",
+            "(Lnet/minecraft/world/entity/Entity;)Ljava/lang/String;", false));
         il.add(new InsnNode(Opcodes.AASTORE));
         // 3: Facing
         il.add(new InsnNode(Opcodes.DUP));
