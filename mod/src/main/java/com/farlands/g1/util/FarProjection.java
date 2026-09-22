@@ -290,14 +290,14 @@ public final class FarProjection {
     public static double unwrapX(int v) {
         Boolean epochCells = GENERATION_EPOCH_CELLS.get();
         if (epochCells != null && epochCells && isEpochActive()) {
-            return epochBlockX + (double) v;
+            return applySamplePolicy(epochBlockX + (double) v);
         }
         Long origin = ORIGIN_X.get();
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
-            return (double) (origin + (v - (int) (long) origin));
+            return applySamplePolicy((double) (origin + (v - (int) (long) origin)));
         }
         if (isEpochActive()) {
-            return epochBlockX + (double) v;
+            return applySamplePolicy(epochBlockX + (double) v);
         }
         return (double) v;
     }
@@ -305,16 +305,49 @@ public final class FarProjection {
     public static double unwrapZ(int v) {
         Boolean epochCells = GENERATION_EPOCH_CELLS.get();
         if (epochCells != null && epochCells && isEpochActive()) {
-            return (double) epochBlockZ + (double) v;
+            return applySamplePolicy((double) epochBlockZ + (double) v);
         }
         Long origin = ORIGIN_Z.get();
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
-            return (double) (origin + (v - (int) (long) origin));
+            return applySamplePolicy((double) (origin + (v - (int) (long) origin)));
         }
         if (isEpochActive()) {
-            return (double) epochBlockZ + (double) v;
+            return applySamplePolicy((double) epochBlockZ + (double) v);
         }
         return (double) v;
+    }
+
+    /**
+     * Worldgen sampling policy (EXPERIMENTAL, user-configurable).
+     *
+     * <p>Beyond {@code worldgen_far_threshold} (default 2^53) the real sample
+     * coordinate is transformed according to {@code worldgen_sample_mode}:</p>
+     * <ul>
+     *   <li>{@code raw} - untouched (native phenomena; default)</li>
+     *   <li>{@code clamp} - clamped to +/-{@code worldgen_sample_clamp}
+     *       (finite but repeated terrain; avoids Infinity)</li>
+     *   <li>{@code quantize} - snapped to the 2^53 grid (flat/stable)</li>
+     * </ul>
+     * <p>Bad parameters are the user's own risk; see docs/USAGE.md.</p>
+     */
+    private static double applySamplePolicy(double real) {
+        if (!isEpochActive()) {
+            return real;
+        }
+        long threshold = com.farlands.g1.util.FarConfig.worldgenFarThreshold();
+        if (threshold > 0 && Math.abs(real) < (double) threshold) {
+            return real;
+        }
+        String mode = com.farlands.g1.util.FarConfig.worldgenSampleMode();
+        if ("clamp".equals(mode)) {
+            double c = com.farlands.g1.util.FarConfig.worldgenSampleClamp();
+            return Math.max(-c, Math.min(c, real));
+        }
+        if ("quantize".equals(mode)) {
+            double grid = 9007199254740992.0; // 2^53
+            return Math.rint(real / grid) * grid;
+        }
+        return real;
     }
 
     /** Real (signed, continuous) block coordinate as a double. */

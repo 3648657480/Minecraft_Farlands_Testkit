@@ -41,7 +41,7 @@ Execute in order:
 
 > **Do NOT** add any JVM flags. Configuration is auto-created.
 
-> **Warning**: replacing the jar without a backup is at your own risk.
+> **Tip**: back up the original jar before replacing, so you can roll back.
 
 ## 2. Usage
 
@@ -109,6 +109,23 @@ debug=false             # verbose logging
 ```
 
 JVM flags override: `-Dfarlands.<key>=<value>`.
+
+### 3.1 Worldgen parameters (experimental)
+
+> **Warning**: experimental. Bad parameters are your responsibility - but the
+> consequences are tested and documented.
+
+| Key | Value | Consequence |
+|---|---|---|
+| `worldgen_sample_mode` | `raw` (default) | Native double sampling; phenomena emerge naturally |
+| | `clamp` | Sample coordinates clamped to +/-`worldgen_sample_clamp` (finite but repeated terrain; avoids Infinity) |
+| | `quantize` | Sample coordinates snapped to the 2^53 grid (very flat/stable terrain) |
+| `worldgen_sample_clamp` | positive finite (default `1e300`) | Clamp bound; smaller = more repetition |
+| `worldgen_far_threshold` | >=0 (default `2^53`) | Policy applies beyond this distance (blocks); `0` = everywhere |
+
+**Measured** (1e306, seed 12345): all three modes generate normally (ocean, topY 62) - no crash.
+**Risk**: extreme combinations may produce anomalous terrain (geometry blowups /
+render pressure); the phenomenon-zone warning applies.
 
 > **Warning**: changing `epoch_x/epoch_z` desyncs already-generated chunks.
 > Prefer `/realtp` or a fresh world.

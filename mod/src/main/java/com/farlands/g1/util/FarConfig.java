@@ -23,6 +23,10 @@ public final class FarConfig {
     private static volatile int fluidTickLimit = 2000;
     // ---- storage ----
     private static volatile String archiveDir = "farlands_epochs";
+    // ---- worldgen (terrain sampling policy) ----
+    private static volatile String worldgenSampleMode = "raw";
+    private static volatile double worldgenSampleClamp = 1e300;
+    private static volatile long worldgenFarThreshold = 9007199254740992L; // 2^53
     // ---- debug ----
     private static volatile int debug = 0;
 
@@ -42,6 +46,9 @@ public final class FarConfig {
         relocateDiscardOver = Integer.MAX_VALUE;
         fluidTickLimit = 2000;
         archiveDir = "farlands_epochs";
+        worldgenSampleMode = "raw";
+        worldgenSampleClamp = 1e300;
+        worldgenFarThreshold = 9007199254740992L;
         debug = 0;
         FarProjection.resetEpoch();
         file = worldDir.resolve("farlands.properties");
@@ -75,6 +82,9 @@ public final class FarConfig {
         override(p, "farlands.relocate_discard_over", "relocate_discard_over");
         override(p, "farlands.fluid_tick_limit", "fluid_tick_limit");
         override(p, "farlands.archive_dir", "archive_dir");
+        override(p, "farlands.worldgen_sample_mode", "worldgen_sample_mode");
+        override(p, "farlands.worldgen_sample_clamp", "worldgen_sample_clamp");
+        override(p, "farlands.worldgen_far_threshold", "worldgen_far_threshold");
         override(p, "farlands.debug", "debug");
 
         try {
@@ -87,6 +97,9 @@ public final class FarConfig {
             relocateDiscardOver = Long.parseLong(p.getProperty("relocate_discard_over", "2147483647"));
             fluidTickLimit = Integer.parseInt(p.getProperty("fluid_tick_limit", "2000"));
             archiveDir = p.getProperty("archive_dir", "farlands_epochs").trim();
+            worldgenSampleMode = p.getProperty("worldgen_sample_mode", "raw").trim();
+            worldgenSampleClamp = Double.parseDouble(p.getProperty("worldgen_sample_clamp", "1e300"));
+            worldgenFarThreshold = Long.parseLong(p.getProperty("worldgen_far_threshold", "9007199254740992"));
             debug = Integer.parseInt(p.getProperty("debug", "0"));
             // policy checks: reject invalid values outright
             if (!"true".equalsIgnoreCase(p.getProperty("auto_relocate", "true"))
@@ -109,6 +122,19 @@ public final class FarConfig {
             if (archiveDir.isEmpty() || archiveDir.contains("..")
                 || archiveDir.contains("/") || archiveDir.contains("\\")) {
                 policyViolation("archive_dir must be a plain directory name, got '" + archiveDir + "'");
+            }
+            if (!"raw".equals(worldgenSampleMode) && !"clamp".equals(worldgenSampleMode)
+                && !"quantize".equals(worldgenSampleMode)) {
+                policyViolation("worldgen_sample_mode must be raw/clamp/quantize, got '"
+                    + worldgenSampleMode + "'");
+            }
+            if (worldgenSampleClamp <= 0 || !Double.isFinite(worldgenSampleClamp)) {
+                policyViolation("worldgen_sample_clamp must be a positive finite number, got "
+                    + worldgenSampleClamp);
+            }
+            if (worldgenFarThreshold < 0) {
+                policyViolation("worldgen_far_threshold must be >= 0 (0 = everywhere), got "
+                    + worldgenFarThreshold);
             }
         } catch (NumberFormatException e) {
             policyViolation("config parse failed: " + e.getMessage());
@@ -192,6 +218,22 @@ public final class FarConfig {
             sb.append("# per-epoch chunk archive directory (relative to the world)\n");
             sb.append("archive_dir=").append(archiveDir).append('\n');
             sb.append('\n');
+            sb.append("# ---- worldgen: terrain sampling policy at extreme ----\n");
+            sb.append("# coordinates. EXPERIMENTAL - you own the consequences.\n");
+            sb.append("#   raw      = native double sampling (default). Terrain\n");
+            sb.append("#              phenomena emerge naturally.\n");
+            sb.append("#   clamp    = clamp sample coordinates to +/-sample_clamp.\n");
+            sb.append("#              Keeps values finite (no Infinity at >1.8e308)\n");
+            sb.append("#              but terrain becomes a repeated pattern.\n");
+            sb.append("#   quantize = snap sample coordinates to the 2^53 grid.\n");
+            sb.append("#              Very flat/stable terrain (experiments).\n");
+            sb.append("worldgen_sample_mode=").append(worldgenSampleMode).append('\n');
+            sb.append("# clamp bound (clamp mode only)\n");
+            sb.append("worldgen_sample_clamp=").append(worldgenSampleClamp).append('\n');
+            sb.append("# distance (blocks from the epoch) beyond which the far\n");
+            sb.append("# policy applies; 0 = everywhere; default 2^53\n");
+            sb.append("worldgen_far_threshold=").append(worldgenFarThreshold).append('\n');
+            sb.append('\n');
             sb.append("# ---- debug ----\n");
             sb.append("# 0 = off, 1 = basic events, 2 = detailed, 3 = EVERYTHING\n");
             sb.append("# WARNING: level 3 produces an ENORMOUS amount of log\n");
@@ -257,6 +299,18 @@ public final class FarConfig {
 
     public static String archiveDir() {
         return archiveDir;
+    }
+
+    public static String worldgenSampleMode() {
+        return worldgenSampleMode;
+    }
+
+    public static double worldgenSampleClamp() {
+        return worldgenSampleClamp;
+    }
+
+    public static long worldgenFarThreshold() {
+        return worldgenFarThreshold;
     }
 
     /** Debug level 0-3 (3 = enormous log output). */
