@@ -1,4 +1,4 @@
-# FarLands G1
+﻿# FarLands G1
 
 > [中文说明](README.zh-CN.md) | **English**
 

@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 
 @Mixin(WorldBorder.class)
 public class WorldBorderMixin {
+
     @Overwrite
     public boolean isWithinBounds(BlockPos pos) {
         return true;
@@ -20,15 +21,5 @@ public class WorldBorderMixin {
     @Overwrite
     public boolean isWithinBounds(double x, double z, double margin) {
         return true;
-    }
-
-    @Overwrite
-    public double getSize() {
-        return Double.MAX_VALUE;
-    }
-
-    @Overwrite
-    public int getAbsoluteMaxSize() {
-        return Integer.MAX_VALUE;
     }
 }

@@ -44,7 +44,7 @@ import java.util.regex.Pattern;
 public final class Main {
 
     private static final Pattern REGION_FILE = Pattern.compile("r\\.(-?\\d+)\\.(-?\\d+)\\.mca");
-    private static final int MAX_DIFF_PATHS_PER_CHUNK = 5;
+    private static final int MAX_DIFF_PATHS_PER_CHUNK = 30;
     private static final int MAX_LISTED_CHUNKS = 40;
     /**
      * Volatile metadata excluded from both the comparison and the content
@@ -99,6 +99,8 @@ public final class Main {
         if (!seedA.equals(seedB)) {
             report.add("WARNING: seeds differ - the comparison is NOT a valid control");
         }
+        report.add("spawnA: " + readSpawn(worldA));
+        report.add("spawnB: " + readSpawn(worldB));
 
         TreeSet<Long> regions = new TreeSet<>();
         collectRegions(regionA, regions);
@@ -282,6 +284,37 @@ public final class Main {
     /** Chunk generation status (e.g. {@code minecraft:full}), or null. */
     private static String status(CompoundTag tag) {
         return tag.contains("Status") ? tag.getStringOr("Status", "?") : null;
+    }
+
+    /** World spawn block position from level.dat ({@code Data.spawn.pos}). */
+    private static String readSpawn(Path world) {
+        Path levelDat = world.resolve("level.dat");
+        if (!Files.exists(levelDat)) {
+            return "no level.dat";
+        }
+        try {
+            CompoundTag nbt = NbtIo.readCompressed(levelDat, NbtAccounter.unlimitedHeap());
+            CompoundTag data = nbt.getCompound("Data").orElse(null);
+            if (data == null) {
+                return "no Data";
+            }
+            Tag spawn = data.get("spawn");
+            if (spawn instanceof CompoundTag spawnTag) {
+                Tag pos = spawnTag.get("pos");
+                if (pos instanceof IntArrayTag arr) {
+                    int[] v = arr.getAsIntArray();
+                    if (v.length >= 3) {
+                        return "(" + v[0] + "," + v[1] + "," + v[2] + ")";
+                    }
+                } else if (pos instanceof ListTag list && list.size() >= 3) {
+                    return "(" + list.getIntOr(0, 0) + "," + list.getIntOr(1, 0) + "," + list.getIntOr(2, 0) + ")";
+                }
+                return "spawn present, pos=" + pos;
+            }
+            return "no spawn tag";
+        } catch (Exception e) {
+            return "error: " + e.getClass().getSimpleName();
+        }
     }
 
     private static void compareTag(String path, Tag a, Tag b, List<String> out, int max) {

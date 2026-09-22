@@ -1,4 +1,4 @@
-# FarLands G1 Manual
+﻿# FarLands G1 Manual
 
 > Style: Strict Respect Style.
 > Directive, but explains why; zero-tolerance, but consequences are verified;

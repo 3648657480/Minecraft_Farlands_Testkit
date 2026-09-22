@@ -1,4 +1,4 @@
-# FarLands G1 — v0.3 (J3 milestone)
+﻿# FarLands G1 — v0.3 (J3 milestone)
 
 A Minecraft 26.2 Far Lands toolkit: an ASM bytecode patcher + Fabric mod that
 pushes the playable world to ±2^31 (2.1 billion blocks) at real coordinates.

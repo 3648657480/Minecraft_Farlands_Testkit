@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(BlockPos.class)
@@ -28,11 +27,13 @@ public class BlockPosMixin {
     @Unique private static final AtomicLong NEXT_HANDLE = new AtomicLong(0);
     @Unique private static final int MAX_MAP_SIZE = 200000;
 
-    @Redirect(method = "<clinit>", at = @At(value = "INVOKE",
-        target = "Lnet/minecraft/util/Mth;smallestEncompassingPowerOfTwo(I)I"))
-    private static int farlands$h27(int value) {
-        return Mth.smallestEncompassingPowerOfTwo(34000000);
-    }
+    // NOTE (F0-2): the PACKED_HORIZONTAL_LENGTH widening redirect that used to
+    // live here changed the packing layout for ALL coordinates, which changed
+    // BlockPos.hashCode and therefore HashSet/HashMap iteration order versus
+    // vanilla (reproducible terrain differences, e.g. tree features at
+    // chunk (625000,625000)). Vanilla packing already covers the whole
+    // vanilla range (+/-33,554,431); coordinates beyond that use the handle
+    // map below. Do not reintroduce a global layout change.
 
     @Overwrite
     public static long asLong(int x, int y, int z) {

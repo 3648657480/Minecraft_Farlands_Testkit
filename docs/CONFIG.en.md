@@ -1,4 +1,4 @@
-# FarLands G1 Configuration Guide
+﻿# FarLands G1 Configuration Guide
 
 > Style: Strict Respect Style. A per-key reference for `farlands.properties`
 > plus preset combinations.

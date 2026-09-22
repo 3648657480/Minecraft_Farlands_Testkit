@@ -8,6 +8,14 @@ apply plugin: 'fabric-loom'
 
 base { archivesName = 'farlands-vanilla-rig' }
 
+// Optional jar-patch mode for F0 bisection: -Dfarlands.rig.patch=true applies
+// the FarLands patch set to the reference jar (still without the mod).
+if (System.getProperty('farlands.rig.patch') == 'true') {
+    loom {
+        addMinecraftJarProcessor(com.farlands.g1.loom.G1JarProcessor)
+    }
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.layered { mappings file(rootProject.file('mappings.tiny')) }

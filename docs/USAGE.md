@@ -1,4 +1,4 @@
-# FarLands G1 使用手册
+﻿# FarLands G1 使用手册
 
 > 文体：严格尊重体（Strict Respect Style）。
 > 指令式，但解释理由；零容忍，但后果已验证；给自由，但不纵容无知。

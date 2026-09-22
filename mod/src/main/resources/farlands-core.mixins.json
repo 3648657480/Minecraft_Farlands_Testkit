@@ -10,8 +10,7 @@
         "ChunkPosMixin",
         "Vec3RealCoordsMixin",
         "DimensionTypeMixin",
-        "WorldBorderMixin",
-        "WorldBorderExtentMixin"
+        "WorldBorderMixin"
     ],
     "injectors": { "defaultRequire": 1 }
 }

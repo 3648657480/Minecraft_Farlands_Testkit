@@ -1,21 +1,19 @@
-# 实验协议（S0 测量基建）
+﻿# 实验协议与记录（S0 / F0）
 
-> 适用红线：R5、R8、R9。本文档是地形生成器深层调试域的实验纪律与记录格式。
+> 适用红线：R5、R8、R9。本文档是地形生成器深层调试域的**唯一**实验规范与记录。
 > 违反任一前提的实验结论一律作废。
 
 ---
 
 ## 1. 固定参数（所有实验共用，不得随意变更）
 
-| 项 | 值 | 说明 |
-|---|---|---|
-| 种子 | `12345` | dev 侧写在 `mod/run/server.properties` 的 `level-seed`；客户端建世界时手动填 |
-| MC 版本 | 26.2（Fabric Loader 0.19.3） | 原版参照：`D:\Minecraft\.minecraft\versions\26.2-Fabric 0.19.3` |
-| 坐标集 | P0-P4（见下表） | 全部在 vanilla 边界（±29,999,984）内 |
-| 渲染距离 | 客户端 8 chunk | 人工跑客户端时固定 |
-| 记录 | 编号/假设/参数/预期/实测/结论/证据 | 见 §5 模板 |
-
-### 坐标集
+| 项 | 值 |
+|---|---|
+| 种子 | `12345`（两侧 server.properties 的 `level-seed`） |
+| MC 版本 | 26.2（Fabric Loader 0.19.3） |
+| 原版参照 | `vanilla-rig` 子项目（无补丁 jar + 同款测量桩） |
+| 坐标集 | P0-P4（下表） |
+| 记录 | 编号/假设/参数/预期/实测/结论/证据（§6 模板） |
 
 | 点 | 区块坐标 | 方块坐标 (x,z) | 说明 |
 |---|---|---|---|
@@ -23,195 +21,141 @@
 | P1 | (62,62) | (1000,1000) | 1e3 |
 | P2 | (62500,62500) | (1000008,1000008) | 1e6 |
 | P3 | (625000,625000) | (10000008,10000008) | 1e7 |
-| P4 | (1812500,1812500) | (29000008,29000008) | 2.9e7（边界内） |
+| P4 | (1812500,1812500) | (29000008,29000008) | 2.9e7 |
 
-testgen 规格串（dev 侧）：`0,0;62,62;62500,62500;625000,625000;1812500,1812500`
+testgen 规格串：`0,0;62,62;62500,62500;625000,625000;1812500,1812500`
 
 ---
 
-## 2. 工具
+## 2. 工具与协议
 
 | 工具 | 用途 | 用法 |
 |---|---|---|
-| `tools/exp-run.ps1` | dev 侧：生成固定区块集 → 沉降 → 保存 → 退出 → 移出世界 | `.\tools\exp-run.ps1 -Tag <标签> -OutDir <目录> -TestGen "<规格串>" -Wide <bool> -Continuity <bool> -Epoch <bool> [-Delay 300] [-Settle 400] [-BgThreads 1]` |
-| `gradlew :mod:worldDiff` | 对照：逐区块比较两个世界（含种子校验、合并哈希、判定） | `.\gradlew.bat :mod:worldDiff -PworldA=<目录> -PworldB=<目录> -Preport=<报告文件> --no-daemon` |
-| testgen（mod 内） | 强制生成指定区块并打印摘要；`-Dfarlands.testgen.stop=true` 时沉降后保存退出 | 见 `MinecraftServerTestGenMixin` |
+| `tools/exp-run.ps1` | 生成固定区块集 → 沉降 → 保存 → 退出 → 移出世界 | `-Tag <标签> -OutDir <目录> -TestGen "<规格串>" -Rig mod\|vanilla [-Delay 300] [-Settle 400] [-BgThreads 1] [-Extra "-Dfarlands.xxx=..."]` |
+| `gradlew :mod:worldDiff` | 区块字节对比（**仅粗筛**，见下） | `-PworldA=<目录> -PworldB=<目录> -Preport=<文件> --no-daemon` |
+| **WG 指纹** | **有效仪器**：生成期（`getChunk` 后立即）计算 `WORLD_SURFACE_WG` + `OCEAN_FLOOR_WG` 全网格与 4×4 生物群系网格的 SHA-256，打印到日志 | testgen 自动输出 `wgHash=surf=... floor=... biome=...` |
 
-### 确定性协议（关键，2026-09-22 建立）
+### 2.1 仪器有效性（2026-09-22 结论）
 
-**结论先行（2026-09-22 晚）：字节级区块对比不是有效的等价性仪器。**
-即使同配置、单线程、关随机刻、单目标，运行间仍会出现间歇性区块内容差异（原版侧同样存在）。
-以下协议只降低噪声，不能消除它；F0 判定需要新仪器（见文末）。
+- **字节级区块对比已证伪**：保存的区块内容跨运行不可复现（同配置也出现 3/5 不同；
+  并行/单线程、有无延迟/沉降、有无随机刻、单/多目标都试过）。差异集中在特征层
+  （水草年龄、樱花树布局、block_ticks、后处理），**不能**用于等价性判定，只作粗筛。
+- **WG 指纹有效**：同配置重复运行逐位一致；差异只可能来自生成数学本身。
 
-**并行生成的区块内容跨运行不可复现**（跨区块特征写入的顺序敏感性；同配置 A3 vs A4 出现 6/6 全不同）。
-对照实验必须使用以下协议，否则测量被时序噪声支配：
+### 2.2 运行协议（降低噪声用）
 
-| 要求 | 值 | 理由 |
-|---|---|---|
-| 后台执行器单线程 | `-Dmax.bg.threads=1` | 生成顺序确定（降低噪声） |
-| 生成延迟 | `Delay=300`（tick） | 避开出生区初始生成并发 |
-| 沉降窗口 | `Settle=400`（tick） | 等后处理/光照完成（full 状态 ≠ 管线完成） |
-| 保存 tick 固定 | delay+settle | 时序效应（ticking）可复现 |
-| 关闭随机刻 | harness 设 `random_tick_speed=0` | 随机刻 RNG 随运行推进不可复现 |
-| 比较过滤 | 仅 `Status=minecraft:full`；忽略 `LastUpdate` | 半生成区块与易变元数据不是地形内容 |
-| 种子校验 | 读 `data/minecraft/world_gen_settings.dat` | 种子不一致时对照无效（工具会 WARNING） |
+| 要求 | 值 |
+|---|---|
+| 后台执行器单线程 | `-Dmax.bg.threads=1` |
+| 生成延迟 | `Delay=300` tick（避开出生区并发） |
+| 沉降窗口 | `Settle=400` tick |
+| 关闭随机刻 | harness 设 `random_tick_speed=0` |
+| 保存 tick | delay+settle（固定） |
 
-**注意**：确定性协议只降低噪声；它不能消除管线固有的运行间差异。
+**重要（dev 缓存）**：dev jar 的补丁组由 `G1JarProcessor.Spec` 缓存（flags 已纳入缓存键）。
+若结果可疑，先看构建日志 `[FarLands-G1] Scanned ... patched ...` 行确认补丁真的应用了。
 
-### F0 噪声特征（实测汇总，2026-09-22）
+### 2.3 无条件补丁集（flags 全关也生效）
 
-| 对比 | 配置 | 协议 | 结果 |
-|---|---|---|---|
-| A3 vs A4 | 同（flags off） | 无控制 | 6/6 不同 |
-| A5 vs A6 | 同（flags off） | Delay 300 | 4/6 不同 |
-| A7 vs A8 | 同（flags off） | +单线程 | 6/6 一致 ✅ |
-| A7 vs B3 | off vs on | +单线程 | 5/5 一致 ✅ |
-| B3 vs V3 | on vs 原版 | +单线程 | 5/5 一致 ✅ |
-| V3 vs V4 | 原版同配置 | +单线程 | 6/6 一致 ✅ |
-| C1 vs B3 | clamp vs raw | 单线程 settle 400 | 2/5 不同 ❌ |
-| B3 vs B5 | 同（on） | 同上 | 3/5 不同 ❌ |
-| B4 vs C2 | raw vs clamp | settle 1200 | 4/5 不同 ❌ |
-| B6 vs B7 | 同（on）+关随机刻 | 同上 | 2/5 不同 ❌ |
-| B8 vs B9 | 同（on）单目标 | 同上 | 1/1 一致 ✅ |
-| B10 vs B11 | 同（off）单目标 | 同上 | 1/2 不同 ❌ |
-| V5 vs V6 | 原版单目标 | 同上 | 2/2 一致 ✅ |
+`FunctionContextRealPatch.noiseOnly`（Noise/ShiftedNoise 坐标重写）、`Vec3iPatch`、
+`GsuPatch`、`AabbClipPatch`、`BlockCollisionsPatch`、`BoundingBoxPatch`、
+`ClientChunkCachePatch`、`ClientChunkCacheStoragePatch`、`ViewAreaPatch`、
+`DebugEntryPositionPatch`、`SectionOcclusionGraphPatch`、`WgrPatch`。
+**flags 全关 ≠ 原版**；"完整管线 vs 原版"必须用 vanilla rig。
 
-**判定**：间歇性噪声在**所有**配置（含纯原版）都存在；"一致"与"不同"都不能归因于补丁组差异。
-字节级区块对比只能作为粗筛（smoke test），不能作为 F0 的等价性证据。
+---
 
-### F0-1 jar 补丁组隔离（记录）
+## 3. F0 干扰基线：设计与结果
 
-- 日期：2026-09-22
-- 假设：wide/continuity/epoch 在 vanilla 范围内对地形生成是 no-op。
-- 仪器：**WG 指纹**（生成期、特征前）：`WORLD_SURFACE_WG` + `OCEAN_FLOOR_WG` 全网格 SHA-256 + 4×4 生物群系哈希。
-  该数据由 testgen 在 `getChunk` 后立即计算并打印到日志（确定性：同配置重复运行逐位一致）。
-- 实测（M1 flags-on vs M2 flags-off，5 目标点）：**5/5 指纹完全一致** ✅
-- 判定：**通过**（地形数学层）。wide/continuity/epoch 补丁组在 P0-P4 对噪声→高度→生物群系无影响。
+### F0-1 jar 补丁组隔离（wide/continuity/epoch）
+
+- **假设**：三个补丁组在 vanilla 范围内对地形生成是 no-op。
+- **方法**：同种子同坐标集，`Wide/Continuity/Epoch` 全关 vs 全开。
+- **结果（2026-09-22）**：M1（全开）vs M2（全关），**5/5 目标点 WG 指纹完全一致** → **通过**。
+- **结论**：wide/continuity/epoch 在 P0-P4 对噪声→高度→生物群系无影响。
 - 证据：`exp-F0-4-M1.log` / `exp-F0-4-M2.log`。
 
-### F0-2 完整管线 vs 原版（记录）
+### F0-2 完整管线 vs 原版
 
-- 原版参照：`vanilla-rig`（无补丁 jar + 同款测量桩）。
-- 实测（M1/M2/M5 我们 vs M3/M4 vanilla，5 目标点）：
-  - **P0 (0,0)、P1 (62,62)、P2 (62500,62500)、P4 (1812500,1812500)：指纹一致** ✅
-  - **P3 (625000,625000)：不一致，且可复现** ❌
-    - 我们（两轮一致）：`surf=73affaa4040f floor=9f242b6d9ef2`
-    - 原版（两轮一致）：`surf=6770cdff96bb floor=81d0572280b2`
-    - 生物群系哈希相同（`6e0ce61e6efb`）→ 差异在固体地形高度，不是生物群系
-- 判定：**F0-2 未通过（P3 存在真实、可复现的差异）**。
-- 归因：flags-on 与 flags-off 的 P3 指纹相同 → 差异来自**无条件集**（无条件 jar 补丁 + 始终生效的 mod mixin）。
-- 已排除（静态审计）：
-  - `Vec3iPatch`：只新增 `getRealX/Y/Z` 访问器，无人调用（惰性）。
-  - `GsuPatch`：客户端渲染器（GlobalSettingsUniform）。
-  - `WgrPatch`：仅 `|centerChunk| > 134M` 触发（P3 = 625k chunk，不触发）。
-  - `BoundingBoxPatch`：`minX/maxX` 在正常坐标 clamp 为 no-op；`getLength` 与原版一致（无 +1）；
-    Beardifier 只用 `minX/maxX/isInside`，正常坐标不受影响（`getXSpan` 的 [1,256] clamp 只在跨度 >256 时有别）。
-  - `NoiseChunkMixin`（Aquifer 包装）：无异常时纯委托。
-- 待归因（下一步二分）：
-  1. **vanilla rig + 仅 jar 补丁（无 farlands mod）**：若 P3 仍不同 → jar 补丁（首要嫌疑 `FunctionContextRealPatch.noiseOnly`）；
-     若一致 → farlands mod 的常驻 mixin。
-  2. 视结果再细分子集。
-- 证据：`exp-F0-4-M1/M2/M3/M4/M5/M8/M9.log`。
+- **假设**：完整管线（补丁 + mod）在 vanilla 范围内与原版逐位一致。
+- **结果（2026-09-22/23，经二分定位与修复）**：
 
-### F0-3 自有配置变量 no-op（记录）
-
-- clamp（阈值内应 no-op）：C1 vs B3 = 2/5 不同 ❌；B4 vs C2 = 4/5 不同 ❌。
-- 代码审计：`applySamplePolicy` 在 `|real| < worldgen_far_threshold`（默认 2^53）时直接返回 real，
-  P0-P4 全部 < 2^53 → 理论上 no-op。
-- 判定：**待用 WG 指纹重做**（旧的区块对比结果不可用）。
-
----
-
-## 7. 仪器改造方案（F0 重做的前置）
-
-字节级区块对比被证伪后，F0 需要确定性仪器。候选（建议 A+B+C 组合）：
-
-| 方案 | 覆盖 | 确定性 | 工程量 |
-|---|---|---|---|
-| A. DF 探针：两侧对固定坐标求密度函数值并逐位比较 | 噪声/坐标数学（F0-1 主要风险面） | 高（纯函数） | 中（探针命令/headless） |
-| B. WG 高度图哈希：testgen 记录目标区块 `WORLD_SURFACE_WG`/`OCEAN_FLOOR_WG` 全网格哈希 | 噪声→高度链 | 高（特征前生成期数据） | 小 |
-| C. 静态审计：容器补丁是否改 hashCode/equals/迭代顺序 | 容器/放置风险面 | 高（代码审查） | 小 |
-| D. 同步生成 harness：绕开异步管线（直接 ChunkGenerator + 彻底排空） | 全链 | 需验证 | 大 |
-
-**D 只在 A+B+C 不足时启动。**
-
-**重要（dev 缓存）**：dev jar 的补丁组由 `G1JarProcessor.Spec` 缓存（wide/continuity/epoch 已纳入缓存键）。
-不同 flags 的运行会触发重新打补丁；若结果可疑，先看构建日志里的 `[FarLands-G1] Scanned ... patched ...` 行确认补丁真的应用了。
-
-**无条件补丁集**（flags 全关也生效）：`FunctionContextRealPatch.noiseOnly`（Noise/ShiftedNoise 坐标重写）、
-`Vec3iPatch`、`GsuPatch`、`AabbClipPatch`、`BlockCollisionsPatch`、`BoundingBoxPatch`、
-`ClientChunkCachePatch`、`ClientChunkCacheStoragePatch`、`ViewAreaPatch`、`DebugEntryPositionPatch`、
-`SectionOcclusionGraphPatch`、`WgrPatch`。
-因此 **flags 全关 ≠ 原版**；"完整管线 vs 原版"必须用 F0-2（纯净版参照）。
-
----
-
-## 3. F0 干扰基线（首轮实验）
-
-> 仪器更新（2026-09-22 晚）：以下设计中的"区块逐字节对比"已被证伪为无效仪器
-> （见上方"F0 噪声特征"）。实验设计保留，但验收改用确定性仪器（DF 探针 + WG 高度图哈希 + 静态审计，见 §7）。
-
-### F0-1 jar 补丁组隔离（dev，自动）
-
-- **假设**：wide/continuity/epoch 三个补丁组在 vanilla 范围内对地形生成是 no-op。
-- **方法**：同种子、同坐标集，两次 dev 运行：
-  - A：`Wide=false Continuity=false Epoch=false`（仅无条件补丁集 + mod）
-  - B：`Wide=true Continuity=true Epoch=true`（完整管线）
-- **预期**：新仪器下逐位一致（DF 值 + WG 高度图哈希）。
-- **若不同**：差异坐标/距离分布 + 差异路径记录，定位到具体补丁组。
-
-### F0-2 完整管线 vs 原版（金标准）
-
-- **假设**：完整管线（补丁 + mod）在 vanilla 范围内与原版逐块一致。
-- **方法**：
-  - 参照：纯净版 `26.2-Fabric 0.19.3`（无 mod 无补丁），固定种子建世界，tp 到 P0-P4（渲染距离 8，每点等待加载），保存退出；
-  - 被测：fork 客户端（同种子同步骤）**或** dev 完整管线世界（F0-1 B）。
-- **预期**：交集区块 `VERDICT: IDENTICAL`。
-- **注意**：客户端人工跑只比较**交集**（双方都生成的区块）；世界哈希不同属正常（区块集合不同）。
-- **局限（必须写进结论）**：原版参照仅覆盖 ±29,999,984；更远距离**无原版参照**，
-  远距离结论只能来自 F0 通过后的受控 A/B（我们自己的变量）。
-
-### F0-3 自有配置变量 no-op 验证
-
-- **假设**：epoch 激活（epoch=0）与 policy（阈值内）在 vanilla 范围内对地形是 no-op。
-- **方法**：
-  - epoch：F0-1 的 A（epoch 休眠）vs B（epoch 激活）已覆盖；
-  - policy：`worldgen_sample_mode=raw`（默认）为基准；`clamp` 在 P0-P4 全部 < 2^53 → 应无差异（可作补充运行）。
-- **预期**：IDENTICAL。
-
-**F0 全部通过后**才进入 S0b（探针：RealContext DF 求值 + 生成期采样日志）与 F1 远距离现象扫描。
-
----
-
-## 4. 已知的干扰嫌疑（F0 要检验的对象）
-
-| 嫌疑 | 位置 | 为什么可能干扰 |
+| 阶段 | floor（固体地形） | surf（含流体/植被表层） |
 |---|---|---|
-| 无条件坐标重写 | `FunctionContextRealPatch.noiseOnly` + mod `NoiseChunkRealCoordsMixin` | 改了 Noise/ShiftedNoise 的坐标取值路径 |
-| 容器访问器 | `Vec3iPatch`、`Vec3iWidePatch`、`BlockPosPatch`、`ChunkPosPatch`、`SectionPosPatch` | 若改了 hashCode/equals/迭代顺序 → 特征/结构放置的 RNG 可能变化 |
-| 碰撞/边界 | `AabbClipPatch`、`BlockCollisionsPatch`、`BoundingBoxPatch` | 结构生成的边界判定 |
-| 生成区稳定 | `WgrPatch` | WorldGenRegion 的可用性判定 |
-| mod 包装 | `NoiseChunkMixin`（Aquifer try-catch 包装）、`FunctionContextMixin` | 理论上行为保持，待验证 |
+| 修复前（M8，全配置） | ≠ 原版（`9f242b6d9ef2`） | ≠ 原版 |
+| **BlockPos 修复后**（FIX1/PROD1/PROD2） | **= 原版（`81d0572280b2`，两轮一致）** ✅ | 两轮不同（`bc1b…`/`5c1d…`）⚠ |
+| 禁用 epoch+border 配置（BIS4） | = 原版 ✅ | = 原版 ✅（bit-exact） |
+
+- **根因与修复**：
+  1. **`BlockPosMixin`（真 bug，已修复）**：其 `<clinit>` 重定向把 `PACKED_HORIZONTAL_LENGTH` 从 25 加宽到 26，
+     改变了 `BlockPos.asLong` 的打包布局 → **hashCode 全变** → 所有 HashSet/HashMap<BlockPos> 的迭代顺序改变
+     → 特征放置顺序改变（可复现）。修复：删除该重定向（vanilla 打包已覆盖 ±33,554,431；更远走 handle 回退）。
+  2. **epoch 出生链 mixin（设计性偏差）**：`SetInitialSpawnEpochMixin` 等把出生点从原版的
+     `(96,136,-32)` 改为 `(0,100,0)`（跳过原版出生搜索），出生区生成队列不同 → 表层（流体/植被）放置顺序
+     在两轮间波动。**这是架构的设计行为**，不是地形数学问题。
+  3. **`WorldBorderMixin`（已收敛）**：移除 `getSize()`/`getAbsoluteMaxSize()` 覆盖（正常坐标唯一可见差异），
+     保留 `isWithinBounds`（正常坐标本来就是 true）。二分证据：BIS4（去掉两个 border mixin）= bit-exact 原版。
+- **判定**：**固体地形数学 = 原版（修复后，可复现）**；表层波动源自设计性的出生点变更；
+  禁用 epoch/border 配置时全管线 bit-exact 原版。
+- 证据：`exp-F0-6-FIX1/PROD1/PROD2/BIS2/BIS3/BIS4/BIS5/BIS6.log`、`report-FIX1-vs-M9.txt`。
+
+### F0-2 二分过程记录（2026-09-23）
+
+| 编号 | 配置 | P3 floor | P3 surf |
+|---|---|---|---|
+| BIS2 | world+test | = 原版 | = 原版 |
+| BIS3 | core+world+test | ≠ | ≠ |
+| BIS4 | core（去两个 border）+world+test | = 原版 | = 原版 |
+| BIS5 | core（去 Extent）+world+test | ≠ | ≠ |
+| BIS6 | core（border 仅 isWithinBounds）+world+test | ≠ | ≠ |
+| FIX1/PROD1/PROD2 | 全配置 + BlockPos 修复 | = 原版 | 波动 |
+
+（BIS3/BIS5/BIS6 的 surf 波动即上文"表层顺序敏感"；floor 的差异在 BlockPos 修复后消除。）
+
+### F0-3 自有配置变量 no-op
+
+- **假设**：`worldgen_sample_mode=clamp` 在阈值内（|coord| < 2^53）对地形是 no-op。
+- **结果**：旧区块对比结果（2/5、4/5 不同）**因仪器无效而作废**；待用 WG 指纹重做。
+- **状态**：⏸ 待重做（优先级低于 F0-2 归因）。
 
 ---
 
-## 5. 记录模板
+## 4. 静态审计结论（无条件集嫌疑）
+
+| 对象 | 结论 |
+|---|---|
+| `Vec3iPatch` | 只新增 `getRealX/Y/Z` 访问器，无调用方 → 惰性 |
+| `GsuPatch` | 客户端渲染器（GlobalSettingsUniform）→ 与地形无关 |
+| `WgrPatch` | 仅 `\|centerChunk\| > 134M` 触发（P3=625k chunk）→ 不触发 |
+| `BoundingBoxPatch` | 正常坐标下 `minX/maxX` clamp 为 no-op；`getLength` 与原版一致（无 +1）；Beardifier 只用 `minX/maxX/isInside` → 正常坐标无影响（`getXSpan` 的 [1,256] clamp 仅在跨度 >256 时有别） |
+| `NoiseChunkMixin`（Aquifer 包装） | 无异常时纯委托 → 行为保持 |
+| `SurfaceSystemProbeMixin` | 只读日志 → 无行为 |
+
+**未排除**：`FunctionContextRealPatch.noiseOnly`（坐标重写）、mod 的 `NoiseChunkRealCoordsMixin`、
+其余常驻 mod mixin（`ChunkMapEpochMixin`、`GenerationChunkHolderMixin` 等）。
+
+---
+
+## 5. 待归因：二分计划（已完成，2026-09-23）
+
+1. ~~仅 jar 补丁（无 farlands mod）~~：不可行（补丁调用 mod 提供的接口方法）；已用 shim 变体 J3 证明
+   **无条件 jar 补丁集无罪**（J3 的 P3 = 原版）。
+2. ~~仅 mod（无 jar 补丁）~~：改为配置级二分（BIS2-BIS6）+ 方法级定位，见 §3 F0-2。
+3. 结论：**`BlockPosMixin` 打包加宽 = 真 bug（已修复）**；`WorldBorderMixin` 已收敛；
+   epoch 出生链 = 设计性偏差；**BIS4（禁用 epoch+border）= 全管线 bit-exact 原版**。
+
+---
+
+## 6. 记录模板
 
 ```
 ## <编号> <标题>
 - 日期：
 - 假设：
-- 参数：种子/坐标集/配置/JVM flags
+- 参数：种子/坐标集/配置/JVM flags/协议
 - 版本标记：<两侧的构建/补丁报告行>
 - 预期：
-- 实测：<world-diff 报告摘要：compared/identical/differing/onlyA/onlyB/合并哈希/VERDICT>
+- 实测：<WG 指纹（surf/floor/biome）或报告摘要>
 - 结论：
-- 证据：<报告文件路径、世界目录路径、日志路径>
+- 证据：<日志路径、报告路径、世界目录>
 ```
-
----
-
-## 6. 实验记录
-
-记录见本文档上方的 "F0 噪声特征"、"F0-1/F0-2/F0-3 记录"（判定均为**未决**，待新仪器）。
-旧记录（"F0-1 通过"）已作废：当时的"一致"不可复现（同配置 B3 vs B5 即不同）。

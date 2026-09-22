@@ -1,4 +1,4 @@
-# AGENTS.md
+﻿# AGENTS.md
 
 Working rules for any agent or contributor on this project.
 These are binding. Violations waste time and produce wrong experimental results.

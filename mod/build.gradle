@@ -22,7 +22,10 @@ dependencies {
 
 loom {
     runtimeOnlyLog4j = true
-    addMinecraftJarProcessor(com.farlands.g1.loom.G1JarProcessor)
+    // F0 bisection: -Dfarlands.patch=false runs the mod on an unpatched jar.
+    if (System.getProperty('farlands.patch') != 'false') {
+        addMinecraftJarProcessor(com.farlands.g1.loom.G1JarProcessor)
+    }
     runConfigs {
         server {
             // Forward every farlands.* system property to the run JVM so
