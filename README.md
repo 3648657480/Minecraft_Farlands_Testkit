@@ -106,7 +106,7 @@ Phenomenon zones are sightseeing areas - the geometry is extremely heavy.
 - [docs/REVIEW.md](docs/REVIEW.md) - architecture review (coordinate domains, mechanisms)
 - [docs/ROADMAP.md](docs/ROADMAP.md) - milestones and lessons
 - [docs/WORKFLOW.md](docs/WORKFLOW.md) - build/test/deploy workflow
-- [docs/E-LINE-DESIGN.md](docs/E-LINE-DESIGN.md) - E line design notes
+- [docs/archive/](docs/archive/) - historical design notes (E line, wide containers)
 
 ## License
 

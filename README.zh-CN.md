@@ -95,7 +95,7 @@ java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true"
 - [docs/REVIEW.md](docs/REVIEW.md) - 架构复习（坐标域、机制）
 - [docs/ROADMAP.md](docs/ROADMAP.md) - 里程碑与教训
 - [docs/WORKFLOW.md](docs/WORKFLOW.md) - 构建/测试/部署工作流
-- [docs/E-LINE-DESIGN.md](docs/E-LINE-DESIGN.md) - E 线设计笔记
+- [docs/archive/](docs/archive/) - 历史设计文档（E 线、宽化容器）
 
 ## 许可
 
