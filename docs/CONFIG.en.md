@@ -153,11 +153,11 @@ risky; negative is an error.
 | Meaning | Max fluid ticks per game tick |
 | Type | integer >= 0 (0 = unlimited) |
 | Default | `2000` |
-| Verification | Unlimited -> CPU burn: **tested** (watchdog stack) |
+| Verification | Unlimited -> CPU saturation: **tested** (watchdog stack) |
 
 **How to use**:
 
-- Default 2000: imperceptible in normal terrain; prevents CPU blowups in
+- Default 2000: imperceptible in normal terrain; prevents CPU saturation in
   anomalous terrain (water-column worlds).
 - Larger (`10000`): faster fluid flow; risk of CPU pressure in anomalous
   terrain (see R4).
@@ -165,11 +165,11 @@ risky; negative is an error.
   line R4.
 
 **Wrong-value consequence**: negative -> **`POLICY VIOLATION` -> JVM aborted**;
-`0` + anomalous terrain -> server thread burns, AppHang (tested).
+`0` + anomalous terrain -> the server thread stays saturated, AppHang (tested).
 
 **Why**: every fluid block runs a recursive slope search (4-8 levels x 3
 directions). A water-column world has millions of fluid blocks; unlimited =
-CPU blowup.
+CPU saturation.
 
 **Interactions**: phenomenon zones (beyond 2^53).
 

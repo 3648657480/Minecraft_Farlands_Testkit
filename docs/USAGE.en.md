@@ -64,7 +64,7 @@ after editing.
 | `auto_relocate` | Auto re-center near the window edge | `true` / `false` | Non-boolean -> **JVM aborted** | Semantics must be explicit; silent fallback hides intent |
 | `relocate_margin` | Trigger distance (blocks) | >= 0 | Negative -> **JVM aborted**; too large -> late relocation (still usable) | Negative is meaningless; too small relocates constantly |
 | `relocate_discard_over` | Shifts larger than this (chunks) use archive mode | >= 1 | < 1 -> **JVM aborted** | Shift amounts must be positive |
-| `fluid_tick_limit` | Fluid ticks per game tick | >= 0 (0 = unlimited) | Negative -> **JVM aborted**; too large -> CPU burn in anomalous terrain (see R4) | 0 is valid semantics (off); negative is an error |
+| `fluid_tick_limit` | Fluid ticks per game tick | >= 0 (0 = unlimited) | Negative -> **JVM aborted**; too large -> CPU saturation in anomalous terrain (see R4) | 0 is valid semantics (off); negative is an error |
 | `archive_dir` | Epoch archive directory name | plain directory name | Empty / contains `/`, `\`, `..` -> **JVM aborted** | Path traversal writes outside the world |
 | `worldgen_sample_mode` | Far sampling policy | `raw` / `clamp` / `quantize` | Invalid -> **JVM aborted**; `clamp`/`quantize` change terrain (see R5) | The mode must be explicit; a typo must not silently mean raw |
 | `worldgen_sample_clamp` | Clamp bound | positive finite | Non-positive/NaN -> **JVM aborted**; too small -> heavy terrain repetition | 0 or NaN makes sampling meaningless |
@@ -120,7 +120,7 @@ Disposition: none (user responsibility). Short diagnostics only.
 Prohibited: `fluid_tick_limit=0` in a water-column world.
 
 Reason: every fluid block runs a recursive slope search; anomalous terrain
-explodes the fluid tick count and burns the server thread in RUNNABLE
+surges the fluid tick count and keeps the server thread busy in RUNNABLE
 (watchdog-confirmed stack).
 
 Verification: tested (2026-09 stress test: `Can't keep up! 95 ticks behind`,
@@ -155,6 +155,35 @@ Verification: tested (2026-09 stress test: AppHangB1, killed via Task Manager).
 Disposition: none (user responsibility). Short visits/screenshots are fine;
 `/realtp` back for playing.
 
+### R7: Consequence descriptions must be factual
+
+Prohibited: using words more severe than the actual phenomenon in consequence
+descriptions (e.g. "CPU burned up").
+
+Reason: exaggerated wording misleads severity judgement and devalues the real
+red lines. A consequence is a statement of fact, not rhetoric.
+
+Verification: corrected (this document, 2026-09).
+
+Disposition: none (writing rule). Factual wording examples: CPU saturation /
+high CPU usage / chunk desync / data corruption.
+
+### R8: Be rigorous and strict with the project
+
+Prohibited: concluding without verification, skipping verification steps, or
+relaxing existing verification discipline.
+
+Reason: a lack of rigour wastes time and produces wrong experimental results.
+Project history has repeatedly confirmed the cost (headless rig vs client
+differences caused several rounds of misjudgement; failing to check jar/mod
+patch-set match caused the double-conversion incident).
+
+Verification: project history (the five iron rules in ROADMAP).
+
+Disposition: none (working rule). Write expected results before each
+experiment and check them after; never deploy on a failed build; one variable
+per round; verify the code is actually running first.
+
 ---
 
 ## 4. Rationale
@@ -187,7 +216,7 @@ guards (fluid limit), not prohibitions.
 | `debug=5` -> JVM abort | tested | rig, `POLICY VIOLATION` + halt confirmed |
 | `worldgen` three modes at 1e306 | tested | rig, seed 12345, raw/clamp/quantize all gen OK |
 | 32 render distance in a phenomenon zone -> 3fps + paging | tested | 2026-09 stress test (AppHangB1) |
-| Unlimited fluid ticks -> CPU burn | tested | watchdog stack (`getSlopeDistance` recursion chain) |
+| Unlimited fluid ticks -> CPU saturation | tested | watchdog stack (`getSlopeDistance` recursion chain) |
 | `debug=3` log volume | simulated | log-volume reasoning (not measured) |
 | `worldgen` terrain discontinuity | unverified | no test conditions - treated as a red line |
 | Manual `epoch_x` edit -> chunk desync | simulated | derived from the cross-world leak incident (same mechanism) |

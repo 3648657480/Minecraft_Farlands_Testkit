@@ -63,7 +63,7 @@ java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true"
 | `auto_relocate` | 走路到窗口边缘自动重定位 | `true` / `false` | 非布尔值 → **JVM 中断** | 语义必须明确，静默降级会隐藏意图 |
 | `relocate_margin` | 触发距离（格） | ≥ 0 | 负数 → **JVM 中断**；过大 → 重定位过晚（仍可用） | 负数无意义；过小会频繁重定位 |
 | `relocate_discard_over` | 平移量超此值（chunk）改归档模式 | ≥ 1 | < 1 → **JVM 中断** | 平移量必须为正 |
-| `fluid_tick_limit` | 每游戏 tick 流体 tick 上限 | ≥ 0（0 = 无限） | 负数 → **JVM 中断**；过大 → 异常地形下 CPU 烧毁（见红线 R4） | 0 是合法语义（关闭限流），负数是错误 |
+| `fluid_tick_limit` | 每游戏 tick 流体 tick 上限 | ≥ 0（0 = 无限） | 负数 → **JVM 中断**；过大 → 异常地形下 CPU 持续满载（见红线 R4） | 0 是合法语义（关闭限流），负数是错误 |
 | `archive_dir` | 纪元归档目录名 | 纯目录名 | 空/含 `/`、`\`、`..` → **JVM 中断** | 路径穿越会写到世界外 |
 | `worldgen_sample_mode` | 远处采样策略 | `raw` / `clamp` / `quantize` | 非法值 → **JVM 中断**；`clamp`/`quantize` 改变地形（见红线 R5） | 模式必须明确，拼写错误不能静默变 raw |
 | `worldgen_sample_clamp` | clamp 模式边界 | 正有限数 | 非正/非有限 → **JVM 中断**；过小 → 地形强重复 | 0 或 NaN 会使采样无意义 |
@@ -110,7 +110,7 @@ JVM 参数覆盖：`-Dfarlands.<键>=<值>`。JVM 参数与文件同权，且不
 
 禁止：`fluid_tick_limit=0` 且处于异常地形（水柱世界）。
 
-原因：每个流体方块触发递归坡度搜索；异常地形下流体 tick 数量爆炸，服务器线程 RUNNABLE 烧毁 CPU（Watchdog 已确认堆栈）。
+原因：每个流体方块触发递归坡度搜索；异常地形下流体 tick 数量激增，服务器线程持续 RUNNABLE 满载 CPU（Watchdog 已确认堆栈）。
 
 验证：已测试（2026-09 压力测试：`Can't keep up! 95 ticks behind`，最终 AppHang）。
 
@@ -135,6 +135,26 @@ JVM 参数覆盖：`-Dfarlands.<键>=<值>`。JVM 参数与文件同权，且不
 验证：已测试（2026-09 压力测试：AppHangB1，任务管理器强杀）。
 
 处置：无（用户责任）。短看/截图可以，长玩请 `/realtp` 回正常区域。
+
+### R7：文档后果必须写实
+
+禁止：后果描述使用超出实际现象的严重词（如"CPU 烧毁"）。
+
+原因：过度的词会误导严重性判断，使真实红线贬值。后果是事实陈述，不是修辞。
+
+验证：已修正（本文档，2026-09）。
+
+处置：无（写作准则）。实际表述示例：CPU 持续满载 / 占用飙升 / 区块错位 / 数据错乱。
+
+### R8：对待项目必须严谨严格
+
+禁止：未验证下结论、跳过验证步骤、放松既有验证纪律。
+
+原因：不严格会导致时间浪费与错误的实验结果。项目历史已多次验证此代价（无头 rig 与客户端差异导致多轮误判；未核对 jar 与 mod 的补丁集匹配导致双重转换事故）。
+
+验证：项目历史教训（ROADMAP 五条铁律）。
+
+处置：无（工作准则）。每次实验前写预期、实验后核对；构建失败禁止部署；每轮单变量；先验证代码真的在跑。
 
 ---
 
@@ -163,7 +183,7 @@ JVM 参数覆盖：`-Dfarlands.<键>=<值>`。JVM 参数与文件同权，且不
 | `debug=5` → JVM 中断 | 已测试 | rig，`POLICY VIOLATION` + halt 确认 |
 | `worldgen` 三模式 1e306 生成 | 已测试 | rig，seed 12345，raw/clamp/quantize 均 gen OK |
 | 32 视距现象区 → 3fps + 虚拟内存告急 | 已测试 | 2026-09 压力测试（AppHangB1） |
-| 流体无限流 → CPU 烧毁 | 已测试 | Watchdog 堆栈（`getSlopeDistance` 递归链） |
+| 流体无限流 → CPU 持续满载 | 已测试 | Watchdog 堆栈（`getSlopeDistance` 递归链） |
 | `debug=3` 日志量 | 已模拟 | 日志量推演（未实测） |
 | `worldgen` 地形不连续 | 未验证 | 无测试条件——按红线对待 |
 | `epoch_x` 手改 → 区块错位 | 已模拟 | 由跨世界残留事故推演（同类机制） |
