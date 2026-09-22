@@ -28,6 +28,18 @@ loom {
             if (System.getProperty('farlands.testgen') != null) {
                 property 'farlands.testgen', System.getProperty('farlands.testgen')
             }
+            if (System.getProperty('farlands.testgen.stop') != null) {
+                property 'farlands.testgen.stop', System.getProperty('farlands.testgen.stop')
+            }
+            if (System.getProperty('farlands.testgen.settle') != null) {
+                property 'farlands.testgen.settle', System.getProperty('farlands.testgen.settle')
+            }
+            if (System.getProperty('farlands.testgen.delay') != null) {
+                property 'farlands.testgen.delay', System.getProperty('farlands.testgen.delay')
+            }
+            if (System.getProperty('max.bg.threads') != null) {
+                property 'max.bg.threads', System.getProperty('max.bg.threads')
+            }
             if (System.getProperty('farlands.spawnset') != null) {
                 property 'farlands.spawnset', System.getProperty('farlands.spawnset')
             }
@@ -62,12 +74,23 @@ processResources {
 
 // E2: offline save translator (shift all chunks by a chunk delta).
 // Usage: gradlew :mod:translateSave -Pworld=<path> -Pdx=<chunks> -Pdz=<chunks>
+// F0: world-diff evidence tool (compare two worlds chunk by chunk).
+// Usage: gradlew :mod:worldDiff -PworldA=<path> -PworldB=<path> [-Preport=<file>]
 sourceSets {
     main {
         java {
             srcDir '../tools/chunk-translator/src'
+            srcDir '../tools/world-diff/src'
         }
     }
+}
+tasks.register('worldDiff', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'farlands.worlddiff.Main'
+    if (project.hasProperty('worldA')) args project.property('worldA')
+    if (project.hasProperty('worldB')) args project.property('worldB')
+    if (project.hasProperty('report')) args project.property('report')
+    workingDir = rootProject.projectDir
 }
 tasks.register('translateSave', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath

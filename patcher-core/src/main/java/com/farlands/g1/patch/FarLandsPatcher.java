@@ -32,14 +32,19 @@ public final class FarLandsPatcher {
     }
 
     public static FarLandsPatcher createDefault() {
+        return createDefault(
+            Boolean.getBoolean("farlands.wide"),
+            Boolean.getBoolean("farlands.continuity"),
+            Boolean.getBoolean("farlands.epoch"));
+    }
+
+    /** Explicit-flag variant: lets build tooling key its cache on the flags. */
+    public static FarLandsPatcher createDefault(boolean wide, boolean continuity, boolean epoch) {
         FarLandsPatcher p = new FarLandsPatcher();
         // 路线图隔离：每条线一个开关，只有通过交界点验收才并入默认构建。
         //   A 稳定线（默认）: 仅稳定性修复 + 访问器
         //   B 容器宽化线: -Dfarlands.wide
         //   D 生成连续性线: -Dfarlands.continuity
-        boolean wide = Boolean.getBoolean("farlands.wide");
-        boolean continuity = Boolean.getBoolean("farlands.continuity");
-        boolean epoch = Boolean.getBoolean("farlands.epoch");
         if (continuity && !wide) {
             throw new IllegalArgumentException("farlands.continuity 依赖 farlands.wide（B 线容器宽化）");
         }

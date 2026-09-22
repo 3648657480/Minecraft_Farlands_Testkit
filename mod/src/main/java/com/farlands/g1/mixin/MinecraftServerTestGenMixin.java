@@ -27,19 +27,38 @@ public abstract class MinecraftServerTestGenMixin {
 
     @Inject(method = "tickServer", at = @At("HEAD"))
     private void farlands$testgen(BooleanSupplier hasTime, CallbackInfo ci) {
-        if (!farlands$testgenDone) {
+        MinecraftServer self = (MinecraftServer) (Object) this;
+        if (!farlands$testgenDone && self.getTickCount() >= Integer.getInteger("farlands.testgen.delay", 0)) {
             farlands$testgenDone = true;
-            runTestGen((MinecraftServer) (Object) this);
+            runTestGen(self);
         }
         if (!farlands$spawnDone) {
             farlands$spawnDone = true;
-            runSpawnSet((MinecraftServer) (Object) this);
+            runSpawnSet(self);
         }
         if (!farlands$spawnSearchDone) {
             farlands$spawnSearchDone = true;
-            runSpawnSearch((MinecraftServer) (Object) this);
+            runSpawnSearch(self);
+        }
+        if (farlands$saveCountdown > 0) {
+            farlands$saveCountdown--;
+            if (farlands$saveCountdown == 0) {
+                self.saveAllChunks(true, true, true);
+                System.out.println("[FarLands-Test] DONE saved");
+                System.out.flush();
+                self.halt(false);
+            }
         }
     }
+
+    /**
+     * Settle window before save: chunk status "full" does not mean the
+     * post-processing / lighting pipeline has finished, so saving right after
+     * generation makes byte comparisons nondeterministic. Wait this many ticks
+     * first (default 200 = 10 s).
+     */
+    @Unique
+    private static int farlands$saveCountdown = -1;
 
     @Unique
     private static boolean farlands$spawnSearchDone = false;
@@ -52,7 +71,7 @@ public abstract class MinecraftServerTestGenMixin {
      */
     @Unique
     private static void runSpawnSearch(MinecraftServer self) {
-        if (System.getProperty("farlands.testgen") == null) return;
+        if (System.getProperty("farlands.testspawn") == null) return;
         try {
             net.minecraft.server.level.ServerLevel level = self.overworld();
             net.minecraft.core.BlockPos pos = self.getWorldData().overworldData().getRespawnData().pos();
@@ -127,54 +146,58 @@ public abstract class MinecraftServerTestGenMixin {
         if (spec == null || spec.isEmpty()) return;
         ServerLevel level = self.overworld();
         try {
-            String[] parts = spec.split(",");
-            int cx = Integer.parseInt(parts[0].trim());
-            int cz = Integer.parseInt(parts[1].trim());
-            int n = parts.length > 2 ? Integer.parseInt(parts[2].trim()) : 1;
-            long t0 = System.currentTimeMillis();
-            ChunkAccess chunk = null;
-            for (int dx = 0; dx < n; dx++) {
-                for (int dz = 0; dz < n; dz++) {
-                    chunk = level.getChunk(cx + dx, cz + dz);
-                }
-            }
-            long genMs = System.currentTimeMillis() - t0;
-            int top = chunk != null ? chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 8, 8) : -999;
-            StringBuilder sb = new StringBuilder();
-            sb.append("[FarLands-Test] gen OK region (").append(cx).append(",").append(cz)
-                .append(")+").append(n).append("x").append(n).append(" last=(").append(cx + n - 1)
-                .append(",").append(cz + n - 1).append(") topY=").append(top).append(" timeMs=").append(genMs)
-                .append(" biome=").append(chunk.getNoiseBiome(8, 60, 8).unwrapKey().map(Object::toString).orElse("?"))
-                .append(" b(8,60,8)=").append(chunk.getBlockState(new net.minecraft.core.BlockPos(cx * 16 + 8, 60, cz * 16 + 8)))
-                .append(" topX8=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 8, 8))
-                .append(" topX9=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 9, 8))
-                .append(" topX12=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 12, 8))
-                .append(" topZ8=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 8, 9));
-            System.out.println(sb);
-            if (chunk != null) {
-                int nonEmpty = 0;
-                for (int i = 0; i < chunk.getSections().length; i++) {
-                    if (chunk.getSections()[i] != null && !chunk.getSections()[i].hasOnlyAir()) {
-                        nonEmpty++;
+            for (String entry : spec.split(";")) {
+                if (entry.trim().isEmpty()) continue;
+                String[] parts = entry.trim().split(",");
+                int cx = Integer.parseInt(parts[0].trim());
+                int cz = Integer.parseInt(parts[1].trim());
+                int n = parts.length > 2 ? Integer.parseInt(parts[2].trim()) : 1;
+                long t0 = System.currentTimeMillis();
+                ChunkAccess chunk = null;
+                for (int dx = 0; dx < n; dx++) {
+                    for (int dz = 0; dz < n; dz++) {
+                        chunk = level.getChunk(cx + dx, cz + dz);
                     }
                 }
-                sb.append(" sections=").append(nonEmpty);
-                sb.append(" surfWG=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, 8, 8));
-                sb.append(" floorWG=").append(chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, 8, 8));
-                sb.append(" b(8,60,8)=").append(chunk.getBlockState(
-                    new net.minecraft.core.BlockPos(cx * 16 + 8, 60, cz * 16 + 8)));
-                sb.append(" b(8,64,8)=").append(chunk.getBlockState(
-                    new net.minecraft.core.BlockPos(cx * 16 + 8, 64, cz * 16 + 8)));
-                sb.append(" b(8,100,8)=").append(chunk.getBlockState(
-                    new net.minecraft.core.BlockPos(cx * 16 + 8, 100, cz * 16 + 8)));
-                sb.append(" biome=").append(chunk.getNoiseBiome(8, 60, 8).unwrapKey()
-                    .map(Object::toString).orElse("?"));
+                long genMs = System.currentTimeMillis() - t0;
+                int top = chunk != null ? chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 8, 8) : -999;
+                int nonEmpty = 0;
+                if (chunk != null) {
+                    for (int i = 0; i < chunk.getSections().length; i++) {
+                        if (chunk.getSections()[i] != null && !chunk.getSections()[i].hasOnlyAir()) {
+                            nonEmpty++;
+                        }
+                    }
+                }
+                StringBuilder sb = new StringBuilder();
+                sb.append("[FarLands-Test] gen OK region (").append(cx).append(",").append(cz)
+                    .append(")+").append(n).append("x").append(n).append(" last=(").append(cx + n - 1)
+                    .append(",").append(cz + n - 1).append(") topY=").append(top).append(" timeMs=").append(genMs)
+                    .append(" biome=").append(chunk.getNoiseBiome(8, 60, 8).unwrapKey().map(Object::toString).orElse("?"))
+                    .append(" b(8,60,8)=").append(chunk.getBlockState(new net.minecraft.core.BlockPos(cx * 16 + 8, 60, cz * 16 + 8)))
+                    .append(" topX8=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 8, 8))
+                    .append(" topX9=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 9, 8))
+                    .append(" topX12=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 12, 8))
+                    .append(" topZ8=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 8, 9))
+                    .append(" sections=").append(nonEmpty)
+                    .append(" surfWG=").append(chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, 8, 8))
+                    .append(" floorWG=").append(chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, 8, 8))
+                    .append(" b(8,64,8)=").append(chunk.getBlockState(
+                        new net.minecraft.core.BlockPos(cx * 16 + 8, 64, cz * 16 + 8)))
+                    .append(" b(8,100,8)=").append(chunk.getBlockState(
+                        new net.minecraft.core.BlockPos(cx * 16 + 8, 100, cz * 16 + 8)));
+                System.out.println(sb);
+                System.out.flush();
             }
-            System.out.println(sb);
+            if (System.getProperty("farlands.testgen.stop") != null) {
+                farlands$saveCountdown = Integer.getInteger("farlands.testgen.settle", 200);
+                System.out.println("[FarLands-Test] settling " + farlands$saveCountdown + " ticks before save");
+                System.out.flush();
+            }
         } catch (Throwable t) {
             System.out.println("[FarLands-Test] gen FAILED: " + t);
             t.printStackTrace(System.out);
+            System.out.flush();
         }
-        System.out.flush();
     }
 }
