@@ -75,8 +75,9 @@ public abstract class TestGenMixin {
                 }
                 long genMs = System.currentTimeMillis() - t0;
                 int top = chunk != null ? chunk.getHeight(Heightmap.Types.WORLD_SURFACE, 8, 8) : -999;
+                String wgHash = chunk != null ? wgHash(chunk) : "none";
                 System.out.println("[FarLands-Test] gen OK region (" + cx + "," + cz + ")+" + n + "x" + n
-                    + " topY=" + top + " timeMs=" + genMs);
+                    + " topY=" + top + " timeMs=" + genMs + " wgHash=" + wgHash);
                 System.out.flush();
             }
             if (System.getProperty("farlands.testgen.stop") != null) {
@@ -89,5 +90,51 @@ public abstract class TestGenMixin {
             t.printStackTrace(System.out);
             System.out.flush();
         }
+    }
+
+    /** Same deterministic fingerprint as the subject harness (see mod testgen). */
+    @Unique
+    private static String wgHash(ChunkAccess chunk) {
+        try {
+            java.security.MessageDigest surfMd = java.security.MessageDigest.getInstance("SHA-256");
+            java.security.MessageDigest floorMd = java.security.MessageDigest.getInstance("SHA-256");
+            java.io.ByteArrayOutputStream surfBos = new java.io.ByteArrayOutputStream();
+            java.io.ByteArrayOutputStream floorBos = new java.io.ByteArrayOutputStream();
+            java.io.DataOutputStream surfDos = new java.io.DataOutputStream(surfBos);
+            java.io.DataOutputStream floorDos = new java.io.DataOutputStream(floorBos);
+            for (int lx = 0; lx < 16; lx++) {
+                for (int lz = 0; lz < 16; lz++) {
+                    surfDos.writeInt(chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, lx, lz));
+                    floorDos.writeInt(chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, lx, lz));
+                }
+            }
+            surfDos.flush();
+            floorDos.flush();
+
+            java.security.MessageDigest biomeMd = java.security.MessageDigest.getInstance("SHA-256");
+            java.io.ByteArrayOutputStream biomeBos = new java.io.ByteArrayOutputStream();
+            java.io.DataOutputStream biomeDos = new java.io.DataOutputStream(biomeBos);
+            for (int qx = 0; qx < 4; qx++) {
+                for (int qz = 0; qz < 4; qz++) {
+                    biomeDos.writeUTF(chunk.getNoiseBiome(qx, 16, qz).unwrapKey().map(Object::toString).orElse("?"));
+                }
+            }
+            biomeDos.flush();
+
+            return "surf=" + hex(surfMd.digest(surfBos.toByteArray())).substring(0, 12)
+                + " floor=" + hex(floorMd.digest(floorBos.toByteArray())).substring(0, 12)
+                + " biome=" + hex(biomeMd.digest(biomeBos.toByteArray())).substring(0, 12);
+        } catch (Exception e) {
+            return "err:" + e.getClass().getSimpleName();
+        }
+    }
+
+    @Unique
+    private static String hex(byte[] hash) {
+        StringBuilder hex = new StringBuilder(hash.length * 2);
+        for (byte b : hash) {
+            hex.append(Character.forDigit((b >> 4) & 0xF, 16)).append(Character.forDigit(b & 0xF, 16));
+        }
+        return hex.toString();
     }
 }

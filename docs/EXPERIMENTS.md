@@ -79,32 +79,46 @@ testgen 规格串（dev 侧）：`0,0;62,62;62500,62500;625000,625000;1812500,18
 **判定**：间歇性噪声在**所有**配置（含纯原版）都存在；"一致"与"不同"都不能归因于补丁组差异。
 字节级区块对比只能作为粗筛（smoke test），不能作为 F0 的等价性证据。
 
-### F0-1 jar 补丁组隔离（记录，判定：未决）
+### F0-1 jar 补丁组隔离（记录）
 
 - 日期：2026-09-22
 - 假设：wide/continuity/epoch 在 vanilla 范围内对地形生成是 no-op。
-- 参数：种子 12345；坐标集 P0-P4；A: flags 全关；B: flags 全开。
-- 版本标记：
-  - A 侧（flags off）：loom 缓存 jar mtime 21:00:47，`ChunkPos.class` 无 `farlands$epoch` 标记、无 `xLong`（无补丁）。
-  - B 侧（flags on）：jar mtime 21:19:27，有 `farlands$epoch` 标记；构建日志 `[FarLands-G1] Scanned 10952 classes, patched 35`。
-- 实测：A7 vs B3 = 5/5 一致（哈希相同）✅；但后续 B3 vs B5（同配置）= 3/5 不同 ❌。
-- 结论：**未决**。观察到的差异与配置无关（同配置复现），观察到的"一致"也不可复现。
-  需要一个确定性仪器（见"仪器改造方案"）。
-- 证据：`experiments\F0-1\report-A7-vs-B3.txt`、`experiments\F0-3\report-B3-vs-B5.txt` 等（全部在 temp 目录）。
+- 仪器：**WG 指纹**（生成期、特征前）：`WORLD_SURFACE_WG` + `OCEAN_FLOOR_WG` 全网格 SHA-256 + 4×4 生物群系哈希。
+  该数据由 testgen 在 `getChunk` 后立即计算并打印到日志（确定性：同配置重复运行逐位一致）。
+- 实测（M1 flags-on vs M2 flags-off，5 目标点）：**5/5 指纹完全一致** ✅
+- 判定：**通过**（地形数学层）。wide/continuity/epoch 补丁组在 P0-P4 对噪声→高度→生物群系无影响。
+- 证据：`exp-F0-4-M1.log` / `exp-F0-4-M2.log`。
 
-### F0-2 完整管线 vs 原版（记录，判定：未决）
+### F0-2 完整管线 vs 原版（记录）
 
-- 原版参照：`vanilla-rig` 子项目（无补丁 jar + 仅强制生成的测量桩，无世界生成 mixin）。
-- 实测：B3 vs V3 = 5/5 一致（哈希相同）✅；V3 vs V4 = 6/6 一致 ✅；但 B3 vs B5（同配置）不同 ❌。
-- 结论：**未决**（同上：仪器噪声地板过高）。
-- 侧记：RCON/forceload 版原版 rig（V1 vs V2）噪声更大（墙钟时序），已弃用。
+- 原版参照：`vanilla-rig`（无补丁 jar + 同款测量桩）。
+- 实测（M1/M2/M5 我们 vs M3/M4 vanilla，5 目标点）：
+  - **P0 (0,0)、P1 (62,62)、P2 (62500,62500)、P4 (1812500,1812500)：指纹一致** ✅
+  - **P3 (625000,625000)：不一致，且可复现** ❌
+    - 我们（两轮一致）：`surf=73affaa4040f floor=9f242b6d9ef2`
+    - 原版（两轮一致）：`surf=6770cdff96bb floor=81d0572280b2`
+    - 生物群系哈希相同（`6e0ce61e6efb`）→ 差异在固体地形高度，不是生物群系
+- 判定：**F0-2 未通过（P3 存在真实、可复现的差异）**。
+- 归因：flags-on 与 flags-off 的 P3 指纹相同 → 差异来自**无条件集**（无条件 jar 补丁 + 始终生效的 mod mixin）。
+- 已排除（静态审计）：
+  - `Vec3iPatch`：只新增 `getRealX/Y/Z` 访问器，无人调用（惰性）。
+  - `GsuPatch`：客户端渲染器（GlobalSettingsUniform）。
+  - `WgrPatch`：仅 `|centerChunk| > 134M` 触发（P3 = 625k chunk，不触发）。
+  - `BoundingBoxPatch`：`minX/maxX` 在正常坐标 clamp 为 no-op；`getLength` 与原版一致（无 +1）；
+    Beardifier 只用 `minX/maxX/isInside`，正常坐标不受影响（`getXSpan` 的 [1,256] clamp 只在跨度 >256 时有别）。
+  - `NoiseChunkMixin`（Aquifer 包装）：无异常时纯委托。
+- 待归因（下一步二分）：
+  1. **vanilla rig + 仅 jar 补丁（无 farlands mod）**：若 P3 仍不同 → jar 补丁（首要嫌疑 `FunctionContextRealPatch.noiseOnly`）；
+     若一致 → farlands mod 的常驻 mixin。
+  2. 视结果再细分子集。
+- 证据：`exp-F0-4-M1/M2/M3/M4/M5/M8/M9.log`。
 
-### F0-3 自有配置变量 no-op（记录，判定：未决）
+### F0-3 自有配置变量 no-op（记录）
 
 - clamp（阈值内应 no-op）：C1 vs B3 = 2/5 不同 ❌；B4 vs C2 = 4/5 不同 ❌。
 - 代码审计：`applySamplePolicy` 在 `|real| < worldgen_far_threshold`（默认 2^53）时直接返回 real，
-  P0-P4 全部 < 2^53 → 理论上 no-op；但无法用区块对比证实。
-- 结论：**未决**（仪器问题，不是代码问题）。
+  P0-P4 全部 < 2^53 → 理论上 no-op。
+- 判定：**待用 WG 指纹重做**（旧的区块对比结果不可用）。
 
 ---
 
