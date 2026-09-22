@@ -55,6 +55,8 @@ java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true"
 
 配置文件：`world\farlands.properties`（自动生成）。编辑后重新进入世界。
 
+> 逐项详解与预设组合见 [配置指南](CONFIG.md)。
+
 | 参数 | 含义 | 可调范围 | 错误后果 | 为什么这样限制 |
 |---|---|---|---|---|
 | `epoch_x` / `epoch_z` | 世界原点（真实坐标） | 任意整数 | **已生成区块全部错位**（见红线 R1） | 无限制——但后果不可逆，系统无法检测 |
