@@ -43,10 +43,9 @@ public class FlowingFluidRateLimitMixin {
             farlands$lastTick = now;
             farlands$count.set(0);
         }
-        int max = 2000;
-        try {
-            max = Integer.parseInt(System.getProperty("farlands.fluid_tick_limit", "2000"));
-        } catch (NumberFormatException ignored) {
+        int max = com.farlands.g1.util.FarConfig.fluidTickLimit();
+        if (max <= 0) {
+            return; // unlimited
         }
         if (farlands$count.incrementAndGet() > max) {
             ci.cancel();

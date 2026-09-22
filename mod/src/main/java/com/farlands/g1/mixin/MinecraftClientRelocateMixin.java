@@ -79,7 +79,7 @@ public class MinecraftClientRelocateMixin {
      * is simply never generated. Fast (file moves only).
      */
     private static int archiveRelocate(Path worldPath, com.farlands.g1.FarRelocate.Request req) {
-        Path epochsDir = worldPath.resolve("farlands_epochs");
+        Path epochsDir = worldPath.resolve(com.farlands.g1.util.FarConfig.archiveDir());
         String oldKey = epochKey(com.farlands.g1.util.FarConfig.epochBigX(), com.farlands.g1.util.FarConfig.epochBigZ());
         String newKey = epochKey(req.newEpochBigX, req.newEpochBigZ);
         int moved = 0;
