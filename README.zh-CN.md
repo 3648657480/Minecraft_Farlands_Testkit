@@ -21,11 +21,12 @@ Minecraft 26.2 边境之地工具集：在**真实坐标**下探索到 2^63（�
 - **任意距离传送**：`/realtp` 真实坐标（命令方块可用），归档式重定位——
   当前纪元归档、目标纪元恢复、中途从不生成（E5）
 - **BigInteger 精确坐标**：纪元精确存储、任意精度字符串解析
-  （`/realtp @p 1e1000 100 0` 有效）；F3 有 `Real (exact)` 行
+  （`/realtp @p 1e1000 100 0` 有效）
+- **F3 真实坐标显示**：XYZ / Block / Chunk 显示真实坐标，超 double 精度自动切精确
+  BigInteger 值；另有 `Local (in-epoch)`、`Epoch ... Laps (2^31)`、`Real double ULP`
+  （量化步长）行；噪声读数改为真实坐标处采样
 - **世界配置自动创建**：新世界自动生成 `world/farlands.properties`
   （纪元=原点）——开箱即用，无需 JVM 参数
-- **距离现象已验证**：2^53 地形急停点、2^63 边境之地（2048 格同质块拼图）、
-  1.8e308 水柱世界
 - **流体 tick 限流**：压力测试发现的递归流体 tick 爆炸守卫
 
 ## 环境要求
@@ -68,17 +69,29 @@ java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true"
 
 ## 距离现象
 
-| 真实坐标 | 现象 |
+本项目管线下的测量结果。全部数值均为**特定实验条件下的特定结果**（本管线、其版本与位置），
+不构成对任何外部记录的否定或更正——见 [docs/USAGE.md](docs/USAGE.md) 红线 R10。
+
+| 真实坐标 | 现象（本项目条件下） |
 |---|---|
-| 2^53（9.007e15） | 地形急停点（ulp=2，相邻采样合并） |
-| 2^63（9.223e18） | 边境之地：128 区块同质块拼图 |
+| 2^53（9.007e15） | 症状起点：1 格采样量化为 2 格成对（地下细微、地表正常） |
+| 2^55（3.603e16） | 主地形量化：规则 8 格阶梯/条带（奶酪状） |
+| 2^56（7.206e16） | 平板结构 + 水面瓷砖（16 格） |
+| 2^63（9.223e18） | 128 区块同质拼图 |
+| ~1.80876436895e24 | 实测"地表主地形改变（条板/墙结构）"起点 |
+| >2.43e27 | 本条件下地形未终止（高度重复） |
 | 1.8e308 | 水柱世界（水平塌缩 + 垂直正常） |
+
+远域退化是**级联**：不同噪声在不同阈值失效（地下先、地表主地形后），
+因此不存在单一"起点"。
 
 现象区 = 观景区——几何极重，不适合长玩。
 
 ## 文档
 
 - [docs/USAGE.md](docs/USAGE.md) / [docs/USAGE.en.md](docs/USAGE.en.md) - 玩家指南
+- [docs/CONFIG.md](docs/CONFIG.md) / [docs/CONFIG.en.md](docs/CONFIG.en.md) - 配置参考 + 预设组合
+- [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) - 实验协议、F0 结果、远域现象表
 - [docs/REVIEW.md](docs/REVIEW.md) - 架构复习（坐标域、机制）
 - [docs/ROADMAP.md](docs/ROADMAP.md) - 里程碑与教训
 - [docs/WORKFLOW.md](docs/WORKFLOW.md) - 构建/测试/部署工作流

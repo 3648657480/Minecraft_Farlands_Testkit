@@ -25,13 +25,14 @@ rewrites them in place on your machine.
   command blocks), archive-style relocation - the current epoch is archived,
   the target epoch restored, the middle is never generated (E5)
 - **BigInteger exact coordinates**: the epoch is stored exactly and parsed from
-  arbitrary-precision strings (`/realtp @p 1e1000 100 0` works); F3 shows a
-  `Real (exact)` line
+  arbitrary-precision strings (`/realtp @p 1e1000 100 0` works)
+- **F3 real-coordinate display**: XYZ / Block / Chunk show real coordinates and
+  switch to exact BigInteger values beyond double precision; extra lines show
+  `Local (in-epoch)`, `Epoch ... Laps (2^31)` and the current `Real double ULP`
+  (quantization step); the noise readouts sample at the real coordinates
 - **Automatic world configuration**: a fresh world auto-creates
   `world/farlands.properties` (epoch = origin) - live out of the box, no JVM
   flags
-- **Distance phenomena verified**: 2^53 terrain stop point, 2^63 far lands
-  (2048-block homogeneous mosaic), 1.8e308 water-column world
 - **Fluid tick rate limit**: guards against the recursive fluid-tick explosion
   found by stress testing
 
@@ -76,17 +77,32 @@ origin of the new epoch - same real coordinates, seamless terrain.
 
 ## Distance phenomena
 
-| Real coordinate | Phenomenon |
+Measured in this project's pipeline. All values are **a specific result under
+specific experimental conditions** (this pipeline, its version and positions);
+they are not a correction of any external record - see R10 in
+[docs/USAGE.en.md](docs/USAGE.en.md).
+
+| Real coordinate | Phenomenon (this project's conditions) |
 |---|---|
-| 2^53 (9.007e15) | Terrain stop point (ulp 2, adjacent samples merge) |
-| 2^63 (9.223e18) | Far lands: 128-chunk homogeneous block mosaic |
+| 2^53 (9.007e15) | Symptom onset: 1-block sampling quantizes to 2-block pairs (underground subtle, surface normal) |
+| 2^55 (3.603e16) | Main-terrain quantization: regular 8-block steps/stripes ("cheese") |
+| 2^56 (7.206e16) | Plate structures + tiled water surface (16 blocks) |
+| 2^63 (9.223e18) | 128-chunk homogeneous mosaic |
+| ~1.80876436895e24 | Measured onset of the surface main-terrain change (strip/wall structures) |
+| >2.43e27 | Terrain not terminated under these conditions (highly repetitive) |
 | 1.8e308 | Water-column world (horizontal collapse + normal vertical) |
+
+The far-domain degradation is a **cascade**: different noise components fail at
+different thresholds (underground first, surface main terrain later), so there
+is no single "starting point".
 
 Phenomenon zones are sightseeing areas - the geometry is extremely heavy.
 
 ## Documentation
 
 - [docs/USAGE.en.md](docs/USAGE.en.md) / [docs/USAGE.md](docs/USAGE.md) - player guides
+- [docs/CONFIG.en.md](docs/CONFIG.en.md) / [docs/CONFIG.md](docs/CONFIG.md) - configuration reference + presets
+- [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) - experiment protocol, F0 results, far-domain phenomenon table
 - [docs/REVIEW.md](docs/REVIEW.md) - architecture review (coordinate domains, mechanisms)
 - [docs/ROADMAP.md](docs/ROADMAP.md) - milestones and lessons
 - [docs/WORKFLOW.md](docs/WORKFLOW.md) - build/test/deploy workflow
