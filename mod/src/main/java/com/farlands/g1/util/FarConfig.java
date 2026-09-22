@@ -24,7 +24,7 @@ public final class FarConfig {
     // ---- storage ----
     private static volatile String archiveDir = "farlands_epochs";
     // ---- debug ----
-    private static volatile boolean debug = false;
+    private static volatile int debug = 0;
 
     private static volatile Path file;
 
@@ -42,7 +42,7 @@ public final class FarConfig {
         relocateDiscardOver = Integer.MAX_VALUE;
         fluidTickLimit = 2000;
         archiveDir = "farlands_epochs";
-        debug = false;
+        debug = 0;
         FarProjection.resetEpoch();
         file = worldDir.resolve("farlands.properties");
         Properties p = new Properties();
@@ -87,9 +87,31 @@ public final class FarConfig {
             relocateDiscardOver = Long.parseLong(p.getProperty("relocate_discard_over", "2147483647"));
             fluidTickLimit = Integer.parseInt(p.getProperty("fluid_tick_limit", "2000"));
             archiveDir = p.getProperty("archive_dir", "farlands_epochs").trim();
-            debug = Boolean.parseBoolean(p.getProperty("debug", "false"));
+            debug = Integer.parseInt(p.getProperty("debug", "0"));
+            // policy checks: reject invalid values outright
+            if (!"true".equalsIgnoreCase(p.getProperty("auto_relocate", "true"))
+                && !"false".equalsIgnoreCase(p.getProperty("auto_relocate", "true"))) {
+                policyViolation("auto_relocate must be true/false, got '"
+                    + p.getProperty("auto_relocate") + "'");
+            }
+            if (relocateMargin < 0) {
+                policyViolation("relocate_margin must be >= 0, got " + (long) relocateMargin);
+            }
+            if (relocateDiscardOver < 1) {
+                policyViolation("relocate_discard_over must be >= 1, got " + relocateDiscardOver);
+            }
+            if (fluidTickLimit < 0) {
+                policyViolation("fluid_tick_limit must be >= 0 (0 = unlimited), got " + fluidTickLimit);
+            }
+            if (debug < 0 || debug > 3) {
+                policyViolation("debug must be 0-3, got " + debug);
+            }
+            if (archiveDir.isEmpty() || archiveDir.contains("..")
+                || archiveDir.contains("/") || archiveDir.contains("\\")) {
+                policyViolation("archive_dir must be a plain directory name, got '" + archiveDir + "'");
+            }
         } catch (NumberFormatException e) {
-            System.out.println("[FarLands-G1] config parse FAILED: " + e);
+            policyViolation("config parse failed: " + e.getMessage());
         }
         if (epochBigX == null) {
             // auto-create: a fresh world gets an epoch at the origin so the
@@ -107,6 +129,26 @@ public final class FarConfig {
         String v = System.getProperty(jvmKey);
         if (v != null && !v.isEmpty()) {
             p.setProperty(fileKey, v);
+        }
+    }
+
+    /**
+     * Policy violation: the configuration is invalid. Reject it and abort
+     * the JVM immediately (fail-fast) instead of silently running with
+     * defaults - a wrong epoch or a wrong margin can corrupt a world.
+     */
+    private static void policyViolation(String message) {
+        System.out.println("[FarLands-G1] POLICY VIOLATION: " + message);
+        System.out.println("[FarLands-G1] configuration rejected; aborting JVM (fail-fast).");
+        System.out.flush();
+        Runtime.getRuntime().halt(1);
+    }
+
+    /** Leveled logging: prints when {@code level <= debug} (debug: 0-3). */
+    public static void log(int level, String message) {
+        if (level <= debug) {
+            System.out.println("[FarLands-G1] " + message);
+            System.out.flush();
         }
     }
 
@@ -151,7 +193,10 @@ public final class FarConfig {
             sb.append("archive_dir=").append(archiveDir).append('\n');
             sb.append('\n');
             sb.append("# ---- debug ----\n");
-            sb.append("# true = verbose runtime logging\n");
+            sb.append("# 0 = off, 1 = basic events, 2 = detailed, 3 = EVERYTHING\n");
+            sb.append("# WARNING: level 3 produces an ENORMOUS amount of log\n");
+            sb.append("# output (per-chunk / per-tick traces). Use only for\n");
+            sb.append("# short diagnostic sessions.\n");
             sb.append("debug=").append(debug).append('\n');
             Files.writeString(f, sb.toString());
         } catch (Exception e) {
@@ -214,7 +259,8 @@ public final class FarConfig {
         return archiveDir;
     }
 
-    public static boolean debug() {
+    /** Debug level 0-3 (3 = enormous log output). */
+    public static int debug() {
         return debug;
     }
 }
