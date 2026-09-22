@@ -34,3 +34,7 @@ opencode.json
 .claude/skills/mixin-writing/references/expressions-language.md
 .claude/skills/mixinmcp-tools/SKILL.md
 .claude/skills/mixinmcp-tools/references/toolchains.md
+
+# rig runtime artifacts
+vanilla-rig/run/
+mod/run/
