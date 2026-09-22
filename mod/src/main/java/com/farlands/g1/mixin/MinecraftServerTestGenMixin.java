@@ -146,6 +146,12 @@ public abstract class MinecraftServerTestGenMixin {
         if (spec == null || spec.isEmpty()) return;
         ServerLevel level = self.overworld();
         try {
+            // Determinism: random ticks use the level RNG (run-order dependent)
+            // and grow kelp/vines, making chunk content vary between runs.
+            level.getGameRules().set(
+                net.minecraft.world.level.gamerules.GameRules.RANDOM_TICK_SPEED, 0, self);
+            System.out.println("[FarLands-Test] random_tick_speed=0 (determinism)");
+            System.out.flush();
             for (String entry : spec.split(";")) {
                 if (entry.trim().isEmpty()) continue;
                 String[] parts = entry.trim().split(",");

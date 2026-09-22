@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "com.farlands.harness",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "TestGenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -39,19 +39,87 @@ testgen 规格串（dev 侧）：`0,0;62,62;62500,62500;625000,625000;1812500,18
 
 ### 确定性协议（关键，2026-09-22 建立）
 
+**结论先行（2026-09-22 晚）：字节级区块对比不是有效的等价性仪器。**
+即使同配置、单线程、关随机刻、单目标，运行间仍会出现间歇性区块内容差异（原版侧同样存在）。
+以下协议只降低噪声，不能消除它；F0 判定需要新仪器（见文末）。
+
 **并行生成的区块内容跨运行不可复现**（跨区块特征写入的顺序敏感性；同配置 A3 vs A4 出现 6/6 全不同）。
 对照实验必须使用以下协议，否则测量被时序噪声支配：
 
 | 要求 | 值 | 理由 |
 |---|---|---|
-| 后台执行器单线程 | `-Dmax.bg.threads=1` | 生成顺序确定（A7 vs A8：6/6 一致，哈希相同） |
+| 后台执行器单线程 | `-Dmax.bg.threads=1` | 生成顺序确定（降低噪声） |
 | 生成延迟 | `Delay=300`（tick） | 避开出生区初始生成并发 |
 | 沉降窗口 | `Settle=400`（tick） | 等后处理/光照完成（full 状态 ≠ 管线完成） |
 | 保存 tick 固定 | delay+settle | 时序效应（ticking）可复现 |
+| 关闭随机刻 | harness 设 `random_tick_speed=0` | 随机刻 RNG 随运行推进不可复现 |
 | 比较过滤 | 仅 `Status=minecraft:full`；忽略 `LastUpdate` | 半生成区块与易变元数据不是地形内容 |
 | 种子校验 | 读 `data/minecraft/world_gen_settings.dat` | 种子不一致时对照无效（工具会 WARNING） |
 
-**注意**：确定性协议只保证"同配置可复现"；它不消除"配置差异"本身的比较——那正是实验对象。
+**注意**：确定性协议只降低噪声；它不能消除管线固有的运行间差异。
+
+### F0 噪声特征（实测汇总，2026-09-22）
+
+| 对比 | 配置 | 协议 | 结果 |
+|---|---|---|---|
+| A3 vs A4 | 同（flags off） | 无控制 | 6/6 不同 |
+| A5 vs A6 | 同（flags off） | Delay 300 | 4/6 不同 |
+| A7 vs A8 | 同（flags off） | +单线程 | 6/6 一致 ✅ |
+| A7 vs B3 | off vs on | +单线程 | 5/5 一致 ✅ |
+| B3 vs V3 | on vs 原版 | +单线程 | 5/5 一致 ✅ |
+| V3 vs V4 | 原版同配置 | +单线程 | 6/6 一致 ✅ |
+| C1 vs B3 | clamp vs raw | 单线程 settle 400 | 2/5 不同 ❌ |
+| B3 vs B5 | 同（on） | 同上 | 3/5 不同 ❌ |
+| B4 vs C2 | raw vs clamp | settle 1200 | 4/5 不同 ❌ |
+| B6 vs B7 | 同（on）+关随机刻 | 同上 | 2/5 不同 ❌ |
+| B8 vs B9 | 同（on）单目标 | 同上 | 1/1 一致 ✅ |
+| B10 vs B11 | 同（off）单目标 | 同上 | 1/2 不同 ❌ |
+| V5 vs V6 | 原版单目标 | 同上 | 2/2 一致 ✅ |
+
+**判定**：间歇性噪声在**所有**配置（含纯原版）都存在；"一致"与"不同"都不能归因于补丁组差异。
+字节级区块对比只能作为粗筛（smoke test），不能作为 F0 的等价性证据。
+
+### F0-1 jar 补丁组隔离（记录，判定：未决）
+
+- 日期：2026-09-22
+- 假设：wide/continuity/epoch 在 vanilla 范围内对地形生成是 no-op。
+- 参数：种子 12345；坐标集 P0-P4；A: flags 全关；B: flags 全开。
+- 版本标记：
+  - A 侧（flags off）：loom 缓存 jar mtime 21:00:47，`ChunkPos.class` 无 `farlands$epoch` 标记、无 `xLong`（无补丁）。
+  - B 侧（flags on）：jar mtime 21:19:27，有 `farlands$epoch` 标记；构建日志 `[FarLands-G1] Scanned 10952 classes, patched 35`。
+- 实测：A7 vs B3 = 5/5 一致（哈希相同）✅；但后续 B3 vs B5（同配置）= 3/5 不同 ❌。
+- 结论：**未决**。观察到的差异与配置无关（同配置复现），观察到的"一致"也不可复现。
+  需要一个确定性仪器（见"仪器改造方案"）。
+- 证据：`experiments\F0-1\report-A7-vs-B3.txt`、`experiments\F0-3\report-B3-vs-B5.txt` 等（全部在 temp 目录）。
+
+### F0-2 完整管线 vs 原版（记录，判定：未决）
+
+- 原版参照：`vanilla-rig` 子项目（无补丁 jar + 仅强制生成的测量桩，无世界生成 mixin）。
+- 实测：B3 vs V3 = 5/5 一致（哈希相同）✅；V3 vs V4 = 6/6 一致 ✅；但 B3 vs B5（同配置）不同 ❌。
+- 结论：**未决**（同上：仪器噪声地板过高）。
+- 侧记：RCON/forceload 版原版 rig（V1 vs V2）噪声更大（墙钟时序），已弃用。
+
+### F0-3 自有配置变量 no-op（记录，判定：未决）
+
+- clamp（阈值内应 no-op）：C1 vs B3 = 2/5 不同 ❌；B4 vs C2 = 4/5 不同 ❌。
+- 代码审计：`applySamplePolicy` 在 `|real| < worldgen_far_threshold`（默认 2^53）时直接返回 real，
+  P0-P4 全部 < 2^53 → 理论上 no-op；但无法用区块对比证实。
+- 结论：**未决**（仪器问题，不是代码问题）。
+
+---
+
+## 7. 仪器改造方案（F0 重做的前置）
+
+字节级区块对比被证伪后，F0 需要确定性仪器。候选（建议 A+B+C 组合）：
+
+| 方案 | 覆盖 | 确定性 | 工程量 |
+|---|---|---|---|
+| A. DF 探针：两侧对固定坐标求密度函数值并逐位比较 | 噪声/坐标数学（F0-1 主要风险面） | 高（纯函数） | 中（探针命令/headless） |
+| B. WG 高度图哈希：testgen 记录目标区块 `WORLD_SURFACE_WG`/`OCEAN_FLOOR_WG` 全网格哈希 | 噪声→高度链 | 高（特征前生成期数据） | 小 |
+| C. 静态审计：容器补丁是否改 hashCode/equals/迭代顺序 | 容器/放置风险面 | 高（代码审查） | 小 |
+| D. 同步生成 harness：绕开异步管线（直接 ChunkGenerator + 彻底排空） | 全链 | 需验证 | 大 |
+
+**D 只在 A+B+C 不足时启动。**
 
 **重要（dev 缓存）**：dev jar 的补丁组由 `G1JarProcessor.Spec` 缓存（wide/continuity/epoch 已纳入缓存键）。
 不同 flags 的运行会触发重新打补丁；若结果可疑，先看构建日志里的 `[FarLands-G1] Scanned ... patched ...` 行确认补丁真的应用了。
@@ -66,14 +134,17 @@ testgen 规格串（dev 侧）：`0,0;62,62;62500,62500;625000,625000;1812500,18
 
 ## 3. F0 干扰基线（首轮实验）
 
+> 仪器更新（2026-09-22 晚）：以下设计中的"区块逐字节对比"已被证伪为无效仪器
+> （见上方"F0 噪声特征"）。实验设计保留，但验收改用确定性仪器（DF 探针 + WG 高度图哈希 + 静态审计，见 §7）。
+
 ### F0-1 jar 补丁组隔离（dev，自动）
 
 - **假设**：wide/continuity/epoch 三个补丁组在 vanilla 范围内对地形生成是 no-op。
 - **方法**：同种子、同坐标集，两次 dev 运行：
   - A：`Wide=false Continuity=false Epoch=false`（仅无条件补丁集 + mod）
   - B：`Wide=true Continuity=true Epoch=true`（完整管线）
-- **预期**：world-diff `VERDICT: IDENTICAL`（含出生区区块）。
-- **若不同**：差异区块坐标/距离分布 + 差异路径（首个 tag 路径）记录，定位到具体补丁组。
+- **预期**：新仪器下逐位一致（DF 值 + WG 高度图哈希）。
+- **若不同**：差异坐标/距离分布 + 差异路径记录，定位到具体补丁组。
 
 ### F0-2 完整管线 vs 原版（金标准）
 
@@ -128,22 +199,5 @@ testgen 规格串（dev 侧）：`0,0;62,62;62500,62500;625000,625000;1812500,18
 
 ## 6. 实验记录
 
-### F0-1 jar 补丁组隔离
-
-- 日期：2026-09-22
-- 假设：wide/continuity/epoch 在 vanilla 范围内对地形生成是 no-op。
-- 参数：种子 12345；坐标集 P0-P4；A: flags 全关；B: flags 全开；确定性协议（`max.bg.threads=1`，Delay=300，Settle=400）。
-- 版本标记：
-  - A 侧（flags off）：loom 缓存 jar mtime 21:00:47，`ChunkPos.class` 无 `farlands$epoch` 标记、无 `xLong`（无补丁）。
-  - B 侧（flags on）：jar mtime 21:19:27，有 `farlands$epoch` 标记；构建日志 `[FarLands-G1] Scanned 10952 classes, patched 35`（含 FunctionContextRealPatch×18 等）。
-- 预期：world-diff `VERDICT: IDENTICAL`（full 状态区块）。
-- 实测（A7 vs B3）：
-  - 5 个 full/full 区块（P0-P4 中 5 个）全部一致；合并哈希相同（`8adec8b5…6bd2c`）。
-  - `VERDICT: IDENTICAL`；`only in A: 172（full: 0）`——均为半生成区块（时序差异，非内容）。
-  - 侧记：A 有 1 个出生区区块达到 full 而 B 未达到（生成状态推进差异，内容无比较意义）。
-- 结论：**通过**。wide/continuity/epoch 补丁组在 vanilla 范围（P0-P4）对区块内容为 no-op（在 mod 无条件补丁集同在的前提下）。
-- 协议迭代记录（重要）：
-  - A3 vs A4（同配置，无单线程/无延迟）：6/6 不同 → 并行生成不可复现。
-  - A5 vs A6（Delay 300，无单线程）：4/6 不同（水草年龄、block_ticks、Pending 后处理）。
-  - A7 vs A8（`max.bg.threads=1` + Delay 300 + Settle 400）：6/6 一致 → 协议确定性达成。
-- 证据：`C:\Users\EASON\AppData\Local\Temp\opencode\experiments\F0-1\report-A7-vs-B3.txt`（另有 A7-vs-A8、A5-vs-A6、A3-vs-A4 报告与日志）。
+记录见本文档上方的 "F0 噪声特征"、"F0-1/F0-2/F0-3 记录"（判定均为**未决**，待新仪器）。
+旧记录（"F0-1 通过"）已作废：当时的"一致"不可复现（同配置 B3 vs B5 即不同）。

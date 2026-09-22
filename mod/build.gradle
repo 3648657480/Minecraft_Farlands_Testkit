@@ -25,28 +25,23 @@ loom {
     addMinecraftJarProcessor(com.farlands.g1.loom.G1JarProcessor)
     runConfigs {
         server {
-            if (System.getProperty('farlands.testgen') != null) {
-                property 'farlands.testgen', System.getProperty('farlands.testgen')
-            }
-            if (System.getProperty('farlands.testgen.stop') != null) {
-                property 'farlands.testgen.stop', System.getProperty('farlands.testgen.stop')
-            }
-            if (System.getProperty('farlands.testgen.settle') != null) {
-                property 'farlands.testgen.settle', System.getProperty('farlands.testgen.settle')
-            }
-            if (System.getProperty('farlands.testgen.delay') != null) {
-                property 'farlands.testgen.delay', System.getProperty('farlands.testgen.delay')
-            }
-            if (System.getProperty('max.bg.threads') != null) {
-                property 'max.bg.threads', System.getProperty('max.bg.threads')
-            }
-            if (System.getProperty('farlands.spawnset') != null) {
-                property 'farlands.spawnset', System.getProperty('farlands.spawnset')
+            // Forward every farlands.* system property to the run JVM so
+            // experiments can override config keys without editing files.
+            System.getProperties().each { key, value ->
+                String k = key.toString()
+                if (k.startsWith('farlands.')) {
+                    property k, value.toString()
+                }
             }
         }
         client {
+            System.getProperties().each { key, value ->
+                String k = key.toString()
+                if (k.startsWith('farlands.')) {
+                    property k, value.toString()
+                }
+            }
             if (System.getProperty('farlands.testgen') != null) {
-                property 'farlands.testgen', System.getProperty('farlands.testgen')
                 programArg '--quickPlaySingleplayer'
                 programArg 'Test World'
             }

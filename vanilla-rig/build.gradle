@@ -1,0 +1,44 @@
+// F0-2 reference rig: a dedicated dev server with NO mod and NO jar patches.
+// It exists to answer "is our pipeline equivalent to vanilla in the normal
+// range" against a pure reference under the deterministic protocol.
+//
+// Run: gradlew :vanilla-rig:runServer with -Dmax.bg.threads=1 for
+// deterministic generation. Chunk forcing is done via RCON (tools/vanilla-run.ps1).
+apply plugin: 'fabric-loom'
+
+base { archivesName = 'farlands-vanilla-rig' }
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.layered { mappings file(rootProject.file('mappings.tiny')) }
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+}
+
+loom {
+    runtimeOnlyLog4j = true
+    runConfigs {
+        server {
+            if (System.getProperty('max.bg.threads') != null) {
+                property 'max.bg.threads', System.getProperty('max.bg.threads')
+            }
+            if (System.getProperty('farlands.testgen') != null) {
+                property 'farlands.testgen', System.getProperty('farlands.testgen')
+            }
+            if (System.getProperty('farlands.testgen.stop') != null) {
+                property 'farlands.testgen.stop', System.getProperty('farlands.testgen.stop')
+            }
+            if (System.getProperty('farlands.testgen.settle') != null) {
+                property 'farlands.testgen.settle', System.getProperty('farlands.testgen.settle')
+            }
+            if (System.getProperty('farlands.testgen.delay') != null) {
+                property 'farlands.testgen.delay', System.getProperty('farlands.testgen.delay')
+            }
+        }
+    }
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(25) }
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}

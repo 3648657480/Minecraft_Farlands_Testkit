@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "farlands-vanilla-rig",
+  "version": "1.0.0",
+  "name": "FarLands Vanilla Rig (measurement harness only)",
+  "description": "Forces a fixed chunk set for F0-2 comparisons. No worldgen mixins, no far-coordinate logic.",
+  "environment": "*",
+  "mixins": [
+    "vanilla-rig.mixins.json"
+  ]
+}
