@@ -39,6 +39,19 @@ Execute:
 `<targets>` is an entity selector (`@p`, `@e`, player name). Command blocks work.
 Coordinates are always real coordinates. Arbitrary precision (`1e1000` is valid).
 
+### 1.2b Live configuration
+
+```
+/farlands                            status line
+/farlands config                     list all values
+/farlands config <key> <value>       set one (applies live + persists)
+/farlands reload                     re-read the file from disk
+```
+
+Solves the "properties are created on world entry, but you cannot leave the
+world to edit them" contradiction. Epoch keys are refused (use `/realtp`).
+See [configuration guide](CONFIG.en.md) section 7.
+
 ### 1.3 Crossing the window
 
 Execute `/realtp` with an out-of-window target. The system will:

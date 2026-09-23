@@ -29,6 +29,10 @@ public final class FarConfig {
     private static volatile long worldgenFarThreshold = 9007199254740992L; // 2^53
     // ---- debug ----
     private static volatile int debug = 0;
+    // ---- pro: experimental, HIGH IMPACT, NOT for normal players ----
+    private static volatile double proSampleOffsetX = 0.0;
+    private static volatile double proSampleOffsetZ = 0.0;
+    private static volatile double proSampleScale = 1.0;
 
     private static volatile Path file;
 
@@ -50,6 +54,9 @@ public final class FarConfig {
         worldgenSampleClamp = 1e300;
         worldgenFarThreshold = 9007199254740992L;
         debug = 0;
+        proSampleOffsetX = 0.0;
+        proSampleOffsetZ = 0.0;
+        proSampleScale = 1.0;
         FarProjection.resetEpoch();
         file = worldDir.resolve("farlands.properties");
         Properties p = new Properties();
@@ -86,6 +93,9 @@ public final class FarConfig {
         override(p, "farlands.worldgen_sample_clamp", "worldgen_sample_clamp");
         override(p, "farlands.worldgen_far_threshold", "worldgen_far_threshold");
         override(p, "farlands.debug", "debug");
+        override(p, "farlands.pro_sample_offset_x", "pro_sample_offset_x");
+        override(p, "farlands.pro_sample_offset_z", "pro_sample_offset_z");
+        override(p, "farlands.pro_sample_scale", "pro_sample_scale");
 
         try {
             if (p.containsKey("epoch_x")) {
@@ -101,6 +111,9 @@ public final class FarConfig {
             worldgenSampleClamp = Double.parseDouble(p.getProperty("worldgen_sample_clamp", "1e300"));
             worldgenFarThreshold = Long.parseLong(p.getProperty("worldgen_far_threshold", "9007199254740992"));
             debug = Integer.parseInt(p.getProperty("debug", "0"));
+            proSampleOffsetX = Double.parseDouble(p.getProperty("pro_sample_offset_x", "0"));
+            proSampleOffsetZ = Double.parseDouble(p.getProperty("pro_sample_offset_z", "0"));
+            proSampleScale = Double.parseDouble(p.getProperty("pro_sample_scale", "1"));
             // policy checks: reject invalid values outright
             if (!"true".equalsIgnoreCase(p.getProperty("auto_relocate", "true"))
                 && !"false".equalsIgnoreCase(p.getProperty("auto_relocate", "true"))) {
@@ -135,6 +148,13 @@ public final class FarConfig {
             if (worldgenFarThreshold < 0) {
                 policyViolation("worldgen_far_threshold must be >= 0 (0 = everywhere), got "
                     + worldgenFarThreshold);
+            }
+            if (!Double.isFinite(proSampleOffsetX) || !Double.isFinite(proSampleOffsetZ)
+                || !Double.isFinite(proSampleScale)) {
+                policyViolation("pro_sample offsets/scale must be finite numbers");
+            }
+            if (proSampleScale <= 0) {
+                policyViolation("pro_sample_scale must be > 0, got " + proSampleScale);
             }
         } catch (NumberFormatException e) {
             policyViolation("config parse failed: " + e.getMessage());
@@ -240,6 +260,16 @@ public final class FarConfig {
             sb.append("# output (per-chunk / per-tick traces). Use only for\n");
             sb.append("# short diagnostic sessions.\n");
             sb.append("debug=").append(debug).append('\n');
+            sb.append('\n');
+            sb.append("# ---- pro: experimental, HIGH IMPACT, not for normal players ----\n");
+            sb.append("# Offsets are ADDED to the noise input coordinates (blocks);\n");
+            sb.append("# scale MULTIPLIES them (>0). Defaults are strict no-ops.\n");
+            sb.append("# These alter terrain generation itself (they morph the\n");
+            sb.append("# terrain everywhere) - use only on fresh test worlds.\n");
+            sb.append("# Change them live with: /farlands config <key> <value>\n");
+            sb.append("pro_sample_offset_x=").append(proSampleOffsetX).append('\n');
+            sb.append("pro_sample_offset_z=").append(proSampleOffsetZ).append('\n');
+            sb.append("pro_sample_scale=").append(proSampleScale).append('\n');
             Files.writeString(f, sb.toString());
         } catch (Exception e) {
             System.out.println("[FarLands-G1] config write FAILED: " + e);
@@ -299,6 +329,203 @@ public final class FarConfig {
 
     public static String archiveDir() {
         return archiveDir;
+    }
+
+    /** Pro: added to the noise input X coordinate (blocks). Default 0 = no-op. */
+    public static double proSampleOffsetX() {
+        return proSampleOffsetX;
+    }
+
+    /** Pro: added to the noise input Z coordinate (blocks). Default 0 = no-op. */
+    public static double proSampleOffsetZ() {
+        return proSampleOffsetZ;
+    }
+
+    /** Pro: multiplies the noise input X/Z coordinates. Default 1 = no-op. */
+    public static double proSampleScale() {
+        return proSampleScale;
+    }
+
+    /** One-line status for /farlands. */
+    public static String status() {
+        return "[FarLands] epoch=" + (epochBigX != null ? epochBigX + "/" + epochBigZ : "n/a")
+            + "  debug=" + debug + "  sample=" + worldgenSampleMode
+            + "  pro(off=" + proSampleOffsetX + "/" + proSampleOffsetZ
+            + ", scale=" + proSampleScale + ")";
+    }
+
+    /** All keys as a multi-line list for /farlands config. */
+    public static String list() {
+        StringBuilder sb = new StringBuilder("[FarLands] config");
+        sb.append("\n epoch_x=").append(epochBigX).append("  epoch_z=").append(epochBigZ);
+        sb.append("\n auto_relocate=").append(autoRelocate)
+          .append("  relocate_margin=").append((long) relocateMargin)
+          .append("  relocate_discard_over=").append(relocateDiscardOver);
+        sb.append("\n fluid_tick_limit=").append(fluidTickLimit).append("  archive_dir=").append(archiveDir);
+        sb.append("\n worldgen_sample_mode=").append(worldgenSampleMode)
+          .append("  worldgen_sample_clamp=").append(worldgenSampleClamp)
+          .append("  worldgen_far_threshold=").append(worldgenFarThreshold);
+        sb.append("\n debug=").append(debug);
+        sb.append("\n pro_sample_offset_x=").append(proSampleOffsetX)
+          .append("  pro_sample_offset_z=").append(proSampleOffsetZ)
+          .append("  pro_sample_scale=").append(proSampleScale);
+        return sb.toString();
+    }
+
+    /**
+     * Live-set a key (validated, applied immediately and persisted). Returns a
+     * human-readable result for the chat. Epoch keys are refused: changing the
+     * epoch of a loaded world would desync chunks - use /realtp instead.
+     */
+    public static String set(String key, String value) {
+        try {
+            switch (key) {
+                case "epoch_x", "epoch_z" -> {
+                    return key + " is read-only here; use /realtp (relocation) instead";
+                }
+                case "auto_relocate" -> {
+                    if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
+                        return "auto_relocate must be true/false";
+                    }
+                    autoRelocate = Boolean.parseBoolean(value);
+                }
+                case "relocate_margin" -> {
+                    double v = Double.parseDouble(value);
+                    if (v < 0) {
+                        return "relocate_margin must be >= 0";
+                    }
+                    relocateMargin = v;
+                }
+                case "relocate_discard_over" -> {
+                    long v = Long.parseLong(value);
+                    if (v < 1) {
+                        return "relocate_discard_over must be >= 1";
+                    }
+                    relocateDiscardOver = v;
+                }
+                case "fluid_tick_limit" -> {
+                    int v = Integer.parseInt(value);
+                    if (v < 0) {
+                        return "fluid_tick_limit must be >= 0 (0 = unlimited)";
+                    }
+                    fluidTickLimit = v;
+                }
+                case "archive_dir" -> {
+                    String v = value.trim();
+                    if (v.isEmpty() || v.contains("..") || v.contains("/") || v.contains("\\")) {
+                        return "archive_dir must be a plain directory name";
+                    }
+                    archiveDir = v;
+                }
+                case "worldgen_sample_mode" -> {
+                    String v = value.trim();
+                    if (!"raw".equals(v) && !"clamp".equals(v) && !"quantize".equals(v)) {
+                        return "worldgen_sample_mode must be raw/clamp/quantize";
+                    }
+                    worldgenSampleMode = v;
+                }
+                case "worldgen_sample_clamp" -> {
+                    double v = Double.parseDouble(value);
+                    if (v <= 0 || !Double.isFinite(v)) {
+                        return "worldgen_sample_clamp must be positive finite";
+                    }
+                    worldgenSampleClamp = v;
+                }
+                case "worldgen_far_threshold" -> {
+                    long v = Long.parseLong(value);
+                    if (v < 0) {
+                        return "worldgen_far_threshold must be >= 0 (0 = everywhere)";
+                    }
+                    worldgenFarThreshold = v;
+                }
+                case "debug" -> {
+                    int v = Integer.parseInt(value);
+                    if (v < 0 || v > 3) {
+                        return "debug must be 0-3";
+                    }
+                    debug = v;
+                }
+                case "pro_sample_offset_x" -> {
+                    double v = Double.parseDouble(value);
+                    if (!Double.isFinite(v)) {
+                        return "pro_sample_offset_x must be finite";
+                    }
+                    proSampleOffsetX = v;
+                }
+                case "pro_sample_offset_z" -> {
+                    double v = Double.parseDouble(value);
+                    if (!Double.isFinite(v)) {
+                        return "pro_sample_offset_z must be finite";
+                    }
+                    proSampleOffsetZ = v;
+                }
+                case "pro_sample_scale" -> {
+                    double v = Double.parseDouble(value);
+                    if (v <= 0 || !Double.isFinite(v)) {
+                        return "pro_sample_scale must be > 0 and finite";
+                    }
+                    proSampleScale = v;
+                }
+                default -> {
+                    return "unknown key: " + key;
+                }
+            }
+        } catch (NumberFormatException e) {
+            return "invalid value for " + key + ": '" + value + "'";
+        }
+        save();
+        return key + " = " + value + " (applied live; persisted)";
+    }
+
+    /**
+     * Re-reads farlands.properties from disk and applies the live-safe keys.
+     * The epoch and relocation internals are left untouched (they are already
+     * bound to the loaded world).
+     */
+    public static void reload() {
+        Path f = file;
+        if (f == null || !Files.isRegularFile(f)) {
+            return;
+        }
+        Properties p = new Properties();
+        try (var in = Files.newInputStream(f)) {
+            p.load(in);
+        } catch (Exception e) {
+            System.out.println("[FarLands-G1] reload read FAILED: " + e);
+            return;
+        }
+        try {
+            autoRelocate = parseBool(p, "auto_relocate", autoRelocate);
+            relocateMargin = parseDouble(p, "relocate_margin", relocateMargin);
+            relocateDiscardOver = parseLong(p, "relocate_discard_over", relocateDiscardOver);
+            fluidTickLimit = (int) parseLong(p, "fluid_tick_limit", fluidTickLimit);
+            archiveDir = p.getProperty("archive_dir", archiveDir).trim();
+            worldgenSampleMode = p.getProperty("worldgen_sample_mode", worldgenSampleMode).trim();
+            worldgenSampleClamp = parseDouble(p, "worldgen_sample_clamp", worldgenSampleClamp);
+            worldgenFarThreshold = parseLong(p, "worldgen_far_threshold", worldgenFarThreshold);
+            debug = (int) parseLong(p, "debug", debug);
+            proSampleOffsetX = parseDouble(p, "pro_sample_offset_x", proSampleOffsetX);
+            proSampleOffsetZ = parseDouble(p, "pro_sample_offset_z", proSampleOffsetZ);
+            proSampleScale = parseDouble(p, "pro_sample_scale", proSampleScale);
+            System.out.println("[FarLands-G1] config reloaded from disk");
+        } catch (NumberFormatException e) {
+            System.out.println("[FarLands-G1] reload failed: " + e.getMessage());
+        }
+    }
+
+    private static boolean parseBool(Properties p, String key, boolean fallback) {
+        String v = p.getProperty(key);
+        return v == null ? fallback : Boolean.parseBoolean(v.trim());
+    }
+
+    private static double parseDouble(Properties p, String key, double fallback) {
+        String v = p.getProperty(key);
+        return v == null ? fallback : Double.parseDouble(v.trim());
+    }
+
+    private static long parseLong(Properties p, String key, long fallback) {
+        String v = p.getProperty(key);
+        return v == null ? fallback : Long.parseLong(v.trim());
     }
 
     public static String worldgenSampleMode() {

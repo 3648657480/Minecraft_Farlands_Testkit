@@ -37,6 +37,18 @@ java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true"
 `<targets>` 为实体选择器（`@p`、`@e`、玩家名）。命令方块可用。
 坐标一律按真实坐标解释。支持任意精度（`1e1000` 合法）。
 
+### 1.2b 世界内改配置
+
+```
+/farlands                            状态行
+/farlands config                     列出全部配置
+/farlands config <key> <value>       改一项（立即生效 + 写回文件）
+/farlands reload                     从磁盘重读配置
+```
+
+解决"配置进世界才创建、进了世界又改不了"的矛盾。epoch 键拒绝修改（用 `/realtp`）。
+详见 [配置指南](CONFIG.md) §7。
+
 ### 1.3 跨越窗口
 
 执行 `/realtp` 指向窗口外坐标即可。系统自动：

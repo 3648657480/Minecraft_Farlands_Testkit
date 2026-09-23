@@ -290,14 +290,14 @@ public final class FarProjection {
     public static double unwrapX(int v) {
         Boolean epochCells = GENERATION_EPOCH_CELLS.get();
         if (epochCells != null && epochCells && isEpochActive()) {
-            return applySamplePolicy(epochBlockX + (double) v);
+            return applySamplePolicy(epochBlockX + (double) v, 0);
         }
         Long origin = ORIGIN_X.get();
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
-            return applySamplePolicy((double) (origin + (v - (int) (long) origin)));
+            return applySamplePolicy((double) (origin + (v - (int) (long) origin)), 0);
         }
         if (isEpochActive()) {
-            return applySamplePolicy(epochBlockX + (double) v);
+            return applySamplePolicy(epochBlockX + (double) v, 0);
         }
         return (double) v;
     }
@@ -305,20 +305,27 @@ public final class FarProjection {
     public static double unwrapZ(int v) {
         Boolean epochCells = GENERATION_EPOCH_CELLS.get();
         if (epochCells != null && epochCells && isEpochActive()) {
-            return applySamplePolicy((double) epochBlockZ + (double) v);
+            return applySamplePolicy((double) epochBlockZ + (double) v, 1);
         }
         Long origin = ORIGIN_Z.get();
         if (origin != null && (origin < -100_000_000L || origin > 100_000_000L)) {
-            return applySamplePolicy((double) (origin + (v - (int) (long) origin)));
+            return applySamplePolicy((double) (origin + (v - (int) (long) origin)), 1);
         }
         if (isEpochActive()) {
-            return applySamplePolicy((double) epochBlockZ + (double) v);
+            return applySamplePolicy((double) epochBlockZ + (double) v, 1);
         }
         return (double) v;
     }
 
     /**
-     * Worldgen sampling policy (EXPERIMENTAL, user-configurable).
+     * Worldgen sampling policy (EXPERIMENTAL, user-configurable) plus the
+     * pro experimental transform.
+     *
+     * <p>The pro transform runs first and defaults to a strict no-op:</p>
+     * <ul>
+     *   <li>{@code pro_sample_scale} multiplies the horizontal coordinate</li>
+     *   <li>{@code pro_sample_offset_x/z} is added afterwards</li>
+     * </ul>
      *
      * <p>Beyond {@code worldgen_far_threshold} (default 2^53) the real sample
      * coordinate is transformed according to {@code worldgen_sample_mode}:</p>
@@ -329,10 +336,23 @@ public final class FarProjection {
      *   <li>{@code quantize} - snapped to the 2^53 grid (flat/stable)</li>
      * </ul>
      * <p>Bad parameters are the user's own risk; see docs/USAGE.md.</p>
+     *
+     * @param axis 0 = X, 1 = Z (pro offsets differ per axis)
      */
-    private static double applySamplePolicy(double real) {
+    private static double applySamplePolicy(double real, int axis) {
         if (!isEpochActive()) {
             return real;
+        }
+        // pro experimental transform (defaults are strict no-ops)
+        double scale = com.farlands.g1.util.FarConfig.proSampleScale();
+        if (scale != 1.0) {
+            real *= scale;
+        }
+        double proOff = axis == 1
+            ? com.farlands.g1.util.FarConfig.proSampleOffsetZ()
+            : com.farlands.g1.util.FarConfig.proSampleOffsetX();
+        if (proOff != 0.0) {
+            real += proOff;
         }
         long threshold = com.farlands.g1.util.FarConfig.worldgenFarThreshold();
         if (threshold > 0 && Math.abs(real) < (double) threshold) {

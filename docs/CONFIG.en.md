@@ -463,3 +463,44 @@ remember the old value; hence the backup in 0.3 is an instruction).
 **Q: Does `debug=3` corrupt worlds?**
 A: No, but it produces enormous logs (disk pressure). **Not measured - treated
 as a red line** (R3).
+
+---
+
+## 6. Pro options (experimental, not for normal players)
+
+> **WARNING**: this group rewrites the **noise input** of terrain generation -
+> terrain is morphed **everywhere** (not just far away). All defaults are strict
+> no-ops. Fresh/test worlds only. Consequences are yours (see USAGE red lines).
+
+| Key | Meaning | Default | Range | Consequence |
+|---|---|---|---|---|
+| `pro_sample_offset_x` | offset added to the noise input X (blocks) | `0` | finite | terrain shifts along X; non-zero = discontinuity with existing terrain |
+| `pro_sample_offset_z` | offset added to the noise input Z (blocks) | `0` | finite | same, Z axis |
+| `pro_sample_scale` | multiplier on the noise input X/Z | `1` | > 0, finite | >1 zooms features out, <1 in; breaks continuity |
+
+**Why the defaults must be no-ops**: they affect **all** terrain (including the
+spawn area). Any non-default value makes newly generated terrain discontinuous
+with old terrain - **do not** use them in normal saves.
+
+**Wrong-value consequence**: non-finite / scale <= 0 -> `POLICY VIOLATION` ->
+JVM aborted.
+
+---
+
+## 7. Live config: the `/farlands` command
+
+`farlands.properties` is created on world entry, and you cannot leave the world
+to edit it - the command solves that:
+
+```
+/farlands                            status line (epoch/debug/sample/pro)
+/farlands config                     list all current values
+/farlands config <key> <value>       set one: applies live + persists
+/farlands reload                     re-read farlands.properties from disk
+```
+
+- Applied live: read-at-use keys (debug, fluid_tick_limit, worldgen_*,
+  pro_*, auto_relocate, relocate_margin, archive_dir)
+- **epoch_x/epoch_z are refused** (changing a loaded world's epoch desyncs
+  chunks) - use `/realtp`
+- Permission: gamemasters (cheats enabled in singleplayer)
