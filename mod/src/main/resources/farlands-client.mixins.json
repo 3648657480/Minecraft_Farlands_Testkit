@@ -18,7 +18,8 @@
         "LevelRendererCamWrapMixin",
         "ParticlePosMixin",
         "MinecraftServerRelocateMixin",
-        "MinecraftClientRelocateMixin"
+        "MinecraftClientRelocateMixin",
+        "CreateWorldScreenMixin"
     ],
     "injectors": { "defaultRequire": 1 }
 }

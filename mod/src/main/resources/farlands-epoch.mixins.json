@@ -11,7 +11,6 @@
         "SpawnTicketRadiusMixin",
         "PrepareSpawnTaskMixin",
         "RealTpCommandMixin",
-        "FarlandsCommandMixin",
         "MinecraftServerAccessor"
     ],
     "injectors": { "defaultRequire": 1 }

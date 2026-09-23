@@ -1,35 +1,70 @@
 ﻿# FarLands G1 配置文件指南
 
-> 文体：严格尊重体。本文档是 `farlands.properties` 的逐项详解与预设组合建议。
+> 版本 1.0.0（权威：仓库根目录 VERSION）
+> 文体：严格尊重体。本文档是配置的唯一参考：全局模板、创建世界标签页、世界文件与逐项详解。
 > 每条后果均标注验证状态。未验证项按红线对待。
 
 ---
 
 ## 0. 文件基础
 
-### 0.1 位置与生成
+配置有三个来源，优先级（高 → 低）：
 
-文件位置：`<世界目录>\farlands.properties`。
+```
+JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
+  > 世界文件   <世界目录>\farlands.properties      世界加载时
+    > 全局模板   config\farlands-g1.properties     模组初始化时创建
+```
 
-生成时机：世界首次加载时自动创建（epoch = 原点，其余默认）。
+### 0.1 全局模板
+
+文件位置：`config\farlands-g1.properties`（Fabric 配置目录）。
+
+生成时机：**模组初始化时**（任何世界存在之前）自动创建，带注释的默认值。
+
+作用：新世界的默认值。你可以在**创建世界之前**先改好它；之后创建的世界继承这些值。
+专用服务器没有创建界面，直接使用全局模板。
 
 | 状态 | 行为 |
 |---|---|
-| 文件不存在 | 自动创建（epoch = 原点） |
+| 文件不存在 | 自动创建（带默认值） |
+| 文件存在 | 作为新世界的种子值 |
+
+### 0.2 创建世界标签页
+
+创建世界界面有两个 FarLands 标签页（通过 CreateWorldScreen 的 mixin 注入）：
+
+| 标签页 | 字段 |
+|---|---|
+| **FarLands** | `epoch_x`、`epoch_z`、`auto_relocate`、`relocate_margin`、`debug`；另有 **"Save as global default"** 按钮 |
+| **FarLands Terrain** | `worldgen_sample_mode`、`worldgen_sample_clamp`、`worldgen_far_threshold`、`pro_sample_offset_x`、`pro_sample_offset_z`、`pro_sample_scale` |
+
+**执行**：世界创建时，这些值在**地形生成之前**写入 `<世界>\farlands.properties`。
+未列在标签页上的键（`relocate_discard_over`、`fluid_tick_limit`、`archive_dir`）取全局模板的值。
+若标签页从未改动，世界文件在**世界加载时**从全局模板播种。
+
+### 0.3 世界文件
+
+文件位置：`<世界目录>\farlands.properties`。这是该世界的配置。
+
+| 状态 | 行为 |
+|---|---|
+| 文件不存在 | 世界加载时从全局模板播种（epoch = 原点） |
 | 文件存在但缺键 | 缺失键取默认值；epoch 缺失视为原点 |
 | 文件存在且格式错误 | **`POLICY VIOLATION` → JVM 中断**（见 R2） |
 
-### 0.2 生效时机
+### 0.4 生效时机
 
-| 参数组 | 生效时机 |
+**配置绝不在运行中的世界内改动。**
+
+| 来源 | 生效时机 |
 |---|---|
-| `epoch_x` / `epoch_z` | 世界加载时（需重新进入世界） |
-| 其余全部 | 世界加载时（需重新进入世界） |
+| 创建世界标签页 | 世界创建时（地形生成前写入世界文件） |
+| 世界文件 | 世界加载时（退出到主菜单再进入即可，不必重启进程） |
+| 全局模板 | 作为**新世界**的播种值；对已存在的世界无效 |
 | JVM 覆盖 | 进程启动时（不落盘） |
 
-**执行**：编辑后必须**重新进入世界**（退出到主菜单再进入即可，不必重启进程）。
-
-### 0.3 备份
+### 0.5 备份
 
 **执行**：编辑前复制一份 `farlands.properties.bak`。
 
@@ -269,7 +304,7 @@
 
 ## 2. 预设组合
 
-复制以下组合到 `farlands.properties`（或只改差异项）。
+在创建世界标签页填入，或在世界文件中只写差异项。
 
 ### P1 标准（默认）
 
@@ -372,7 +407,7 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <游戏启动器>
 规则：
 
 - 键名：`-Dfarlands.<配置键>=<值>`（与文件键一一对应）。
-- 优先级：JVM 参数 **覆盖** 文件值（同权，不落盘）。
+- 优先级：JVM 覆盖世界文件，世界文件覆盖全局模板（JVM 不落盘）。
 - 用途：临时测试，不想改文件。
 - **警告**：JVM 参数同样经过 policy 检查；非法值一样 halt。
 
@@ -382,7 +417,8 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <游戏启动器>
 
 | 错误类型 | 系统行为 |
 |---|---|
-| 文件不存在 | 自动创建（epoch = 原点） |
+| 全局模板缺失 | 模组初始化时自动创建 |
+| 世界文件不存在 | 世界加载时从全局模板播种（epoch = 原点） |
 | 缺键 | 取默认值 |
 | 格式错误（非数字/非布尔） | `POLICY VIOLATION` → **JVM 中断** |
 | 值越界（debug=5、负数等） | `POLICY VIOLATION` → **JVM 中断** |
@@ -438,17 +474,27 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <游戏启动器>
 
 ---
 
-## 7. 世界内改配置：`/farlands` 命令
+## 7. 创建世界界面 + 全局模板
 
-`farlands.properties` 原本要进世界才创建，而进世界后又没法退出去改——用命令解决：
+### 7.1 标签页
 
-```
-/farlands                            状态行（epoch/debug/采样/pro）
-/farlands config                     列出全部当前值
-/farlands config <key> <value>       改一项：立即生效 + 写回文件
-/farlands reload                     从磁盘重读 farlands.properties
-```
+创建世界界面有两个 FarLands 标签页；选择在生成前写入世界文件。
 
-- 立即生效的是"读时取值"的项（debug、fluid_tick_limit、worldgen_*、pro_*、auto_relocate、relocate_margin、archive_dir）
-- **epoch_x/epoch_z 拒绝命令修改**（已加载世界的纪元改动会让区块错位）——用 `/realtp`
-- 权限：管理员（单机需开作弊）
+- **FarLands**：`epoch_x`、`epoch_z`、`auto_relocate`、`relocate_margin`、`debug`
+- **FarLands Terrain**：`worldgen_sample_mode`、`worldgen_sample_clamp`、`worldgen_far_threshold`、`pro_sample_offset_x`、`pro_sample_offset_z`、`pro_sample_scale`
+
+在创建世界前即可填好 epoch——这正是"配置进世界才创建、进了世界又改不了"矛盾的解法。
+**"Save as global default"** 把当前标签页的值写回全局模板。
+
+### 7.2 全局模板
+
+- 路径：`config\farlands-g1.properties`（Fabric 配置目录）
+- 由模组初始化时自动创建（任何世界之前），带注释默认值
+- 新世界（有界面或无界面）都从它继承
+- 专用服务器没有创建界面，直接使用全局模板
+
+### 7.3 修改已有世界
+
+**执行**：退出世界 → 编辑 `<世界>\farlands.properties`（或全局模板）→ 重新进入世界。
+
+**配置绝不在运行中的世界内改动。** epoch 键请优先用 `/realtp`；手动改会让已生成区块错位（见 R1）。

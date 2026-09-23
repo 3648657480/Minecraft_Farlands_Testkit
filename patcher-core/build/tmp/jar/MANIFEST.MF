@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
 Implementation-Title: FarLands Patcher Core
-Implementation-Version: 1.0-SNAPSHOT
+Implementation-Version: 1.0.0
 

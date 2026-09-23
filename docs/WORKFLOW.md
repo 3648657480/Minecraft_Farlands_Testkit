@@ -1,5 +1,7 @@
 ﻿# 工作流速查（FarLands G1）
 
+> 版本 1.0.0（权威：仓库根目录 VERSION）
+
 ## 构建
 
 ```powershell
@@ -7,8 +9,10 @@ cd C:\Project-G1
 .\gradlew.bat :patcher-cli:build :mod:build --no-daemon
 ```
 
-产物：`mod/build/libs/farlands-g1-mod-1.0-SNAPSHOT.jar`（mod）
-+ `patcher-cli/build/libs/patcher-cli-1.0-SNAPSHOT.jar`（补丁工具）
+产物：`mod/build/libs/farlands-g1-mod-1.0.0.jar`（mod）
++ `patcher-cli/build/libs/patcher-cli-1.0.0.jar`（补丁工具）
+
+版本号来自仓库根目录 `VERSION`（唯一权威），并进入 `fabric.mod.json` 与 jar 名。
 
 **铁律**：构建失败（`build: False`）**禁止部署**旧产物。
 
@@ -17,7 +21,7 @@ cd C:\Project-G1
 ```powershell
 $java = "C:\Program Files\Eclipse Adoptium\jdk-25.0.3.9-hotspot\bin\java.exe"
 & $java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true" `
-  -jar "C:\Project-G1\patcher-cli\build\libs\patcher-cli-1.0-SNAPSHOT.jar" `
+  -jar "C:\Project-G1\patcher-cli\build\libs\patcher-cli-1.0.0.jar" `
   --in "D:\Minecraft\.minecraft\versions\26.2-Fabric 0.19.3\26.2-Fabric 0.19.3.jar" `
   --out "D:\Minecraft\.minecraft\versions\26.2-Fabric 0.19.3_fork\26.2-Fabric 0.19.3_fork.jar"
 ```
@@ -71,19 +75,14 @@ tools\exp-run.ps1 -Tag F0-x -OutDir <证据目录> -TestGen "0,0;62,62;..." `
 /realtp <targets> <x> <y> <z>    实体传送（命令方块可用）
 ```
 
-世界配置 `world/farlands.properties`（自动创建）：
-```properties
-epoch_x=0
-epoch_z=0
-auto_relocate=true
-relocate_margin=100000
-```
+世界配置见 [CONFIG.md](CONFIG.md)：全局模板 `config/farlands-g1.properties` +
+创建世界界面 FarLands 标签页 + `<世界>/farlands.properties`。
 
 ## 日志标记
 
 | 标记 | 来源 |
 |---|---|
-| `[FarLands-G1] v3.x epoch build` | mod 版本（测试第一项必看） |
+| `[FarLands-G1] <version> epoch build (realtp + relocate)` | mod 版本，`<version>` 来自仓库根目录 VERSION（测试第一项必看） |
 | `[FarLands-G1] EPOCH set to real (...)` | epoch 设定（from farlands.properties / spawnset） |
 | `[FarLands-G1] config auto-created` | 新世界自动初始化 |
 | `[FarLands] /realtp ...` | 命令执行（real → local） |
@@ -127,7 +126,7 @@ C:\Project-G1\
 │   ├─ world-diff\           区块字节对比工具
 │   └─ chunk-translator\     存档平移工具
 └─ docs\
-    ├─ USAGE(.en).md         玩家手册（红线 R1-R10）
+    ├─ USAGE(.en).md         玩家手册（安全红线 R1-R6；R7-R10 见 AGENTS.md）
     ├─ CONFIG(.en).md        配置参考 + 预设组合
     ├─ EXPERIMENTS.md        实验协议 + 远域现象表
     ├─ ROADMAP.md            路线图/里程碑/教训

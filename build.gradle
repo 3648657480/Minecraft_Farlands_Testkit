@@ -1,6 +1,9 @@
 allprojects {
     group = 'com.farlands'
-    version = project.hasProperty('mod_version') ? project.mod_version : '1.0.0'
+    // Single version authority: the VERSION file at the repository root.
+    // It flows into fabric.mod.json (processResources), the jar name, and the
+    // runtime banner (read back from mod metadata) - and every doc refers to it.
+    version = rootProject.file('VERSION').text.trim()
 
     repositories {
         maven { url 'https://maven.aliyun.com/repository/public' }

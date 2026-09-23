@@ -1,6 +1,7 @@
 ﻿# FarLands G1
 
 > [中文说明](README.zh-CN.md) | **English**
+> Version 1.0.0 (authority: repo-root VERSION)
 
 Minecraft 26.2 Far Lands toolset: real-coordinate exploration up to 2^63
 (eventually 1e306) - no scaling, no fake coordinates, real terrain.
@@ -30,9 +31,9 @@ rewrites them in place on your machine.
   switch to exact BigInteger values beyond double precision; extra lines show
   `Local (in-epoch)`, `Epoch ... Laps (2^31)` and the current `Real double ULP`
   (quantization step); the noise readouts sample at the real coordinates
-- **Automatic world configuration**: a fresh world auto-creates
-  `world/farlands.properties` (epoch = origin) - live out of the box, no JVM
-  flags
+- **Configuration at world creation**: FarLands tabs on the create-world
+  screen set the epoch and terrain policy before any terrain is generated;
+  new worlds inherit a global template (see [CONFIG](docs/CONFIG.en.md))
 - **Fluid tick rate limit**: guards against the recursive fluid-tick explosion
   found by stress testing
 
@@ -47,21 +48,15 @@ rewrites them in place on your machine.
 gradlew clean build
 ```
 
-Produces `patcher-cli/build/libs/patcher-cli-1.0-SNAPSHOT.jar` and
-`mod/build/libs/farlands-g1-mod-1.0-SNAPSHOT.jar`.
+Produces `patcher-cli/build/libs/patcher-cli-1.0.0.jar` and
+`mod/build/libs/farlands-g1-mod-1.0.0.jar`.
 
 ## Install
 
-1. Patch your own client jar:
-```powershell
-java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true" `
-  -jar patcher-cli-1.0-SNAPSHOT.jar --in <your-26.2.jar> --out <fork.jar>
-```
-2. Use the fork jar as the version jar (back up the original)
-3. Put the mod jar into `mods/`
-4. Launch - no JVM flags needed
-
-See [docs/USAGE.en.md](docs/USAGE.en.md) for the full player guide.
+1. Patch your own client jar with `patcher-cli-1.0.0.jar`; use the fork jar as the version jar (back up the original).
+2. Put `farlands-g1-mod-1.0.0.jar` into `mods/` and launch.
+3. Set epoch and terrain options on the FarLands tabs when creating a world.
+   Full walkthrough: [docs/USAGE.en.md](docs/USAGE.en.md).
 
 ## In-game
 
@@ -77,35 +72,20 @@ origin of the new epoch - same real coordinates, seamless terrain.
 
 ## Distance phenomena
 
-Measured in this project's pipeline. All values are **a specific result under
-specific experimental conditions** (this pipeline, its version and positions);
-they are not a correction of any external record - see R10 in
-[docs/USAGE.en.md](docs/USAGE.en.md).
-
-| Real coordinate | Phenomenon (this project's conditions) |
-|---|---|
-| 2^53 (9.007e15) | Symptom onset: 1-block sampling quantizes to 2-block pairs (underground subtle, surface normal) |
-| 2^55 (3.603e16) | Main-terrain quantization: regular 8-block steps/stripes ("cheese") |
-| 2^56 (7.206e16) | Plate structures + tiled water surface (16 blocks) |
-| 2^63 (9.223e18) | 128-chunk homogeneous mosaic |
-| ~1.80876436895e24 | Measured onset of the surface main-terrain change (strip/wall structures) |
-| >2.43e27 | Terrain not terminated under these conditions (highly repetitive) |
-| 1.8e308 | Water-column world (horizontal collapse + normal vertical) |
-
-The far-domain degradation is a **cascade**: different noise components fail at
-different thresholds (underground first, surface main terrain later), so there
-is no single "starting point".
-
-Phenomenon zones are sightseeing areas - the geometry is extremely heavy.
+Measurements, method and conditions live in
+[docs/EXPERIMENTS.md](docs/EXPERIMENTS.md). They are specific results under
+specific experimental conditions and do not correct any external record - see
+the red lines in [AGENTS.md](AGENTS.md) (R10).
 
 ## Documentation
 
-- [docs/USAGE.en.md](docs/USAGE.en.md) / [docs/USAGE.md](docs/USAGE.md) - player guides
+- [docs/USAGE.en.md](docs/USAGE.en.md) / [docs/USAGE.md](docs/USAGE.md) - player guides (install, `/realtp`, configuration entry point, safety)
 - [docs/CONFIG.en.md](docs/CONFIG.en.md) / [docs/CONFIG.md](docs/CONFIG.md) - configuration reference + presets
 - [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) - experiment protocol, F0 results, far-domain phenomenon table
 - [docs/REVIEW.md](docs/REVIEW.md) - architecture review (coordinate domains, mechanisms)
 - [docs/ROADMAP.md](docs/ROADMAP.md) - milestones and lessons
 - [docs/WORKFLOW.md](docs/WORKFLOW.md) - build/test/deploy workflow
+- [AGENTS.md](AGENTS.md) - binding red lines (R7-R10) and the five iron rules
 - [docs/archive/](docs/archive/) - historical design notes (E line, wide containers)
 
 ## License

@@ -1,5 +1,6 @@
 ﻿# FarLands G1 Manual
 
+> Version 1.0.0 (authority: repo-root VERSION)
 > Style: Strict Respect Style.
 > Directive, but explains why; zero-tolerance, but consequences are verified;
 > gives freedom, but does not indulge ignorance.
@@ -19,12 +20,12 @@ Execute:
 
 ```powershell
 java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true" `
-  -jar patcher-cli-1.0-SNAPSHOT.jar `
+  -jar patcher-cli-1.0.0.jar `
   --in <official-26.2.jar> --out <fork.jar>
 ```
 
 3. Replace the same-named jar in the versions folder with the fork jar
-4. Put `farlands-g1-mod-1.0-SNAPSHOT.jar` into `mods\`
+4. Put `farlands-g1-mod-1.0.0.jar` into `mods\`
 5. Launch
 
 ### 1.2 Teleport
@@ -39,18 +40,19 @@ Execute:
 `<targets>` is an entity selector (`@p`, `@e`, player name). Command blocks work.
 Coordinates are always real coordinates. Arbitrary precision (`1e1000` is valid).
 
-### 1.2b Live configuration
+### 1.2b Configuration entry points
 
-```
-/farlands                            status line
-/farlands config                     list all values
-/farlands config <key> <value>       set one (applies live + persists)
-/farlands reload                     re-read the file from disk
-```
+Configuration is set **before world creation**, or edited in a file **after
+leaving the world** - **never from inside a running world**:
 
-Solves the "properties are created on world entry, but you cannot leave the
-world to edit them" contradiction. Epoch keys are refused (use `/realtp`).
-See [configuration guide](CONFIG.en.md) section 7.
+1. **Create-world screen**: the FarLands tabs set the epoch and terrain policy
+   (written to `farlands.properties` before generation).
+2. **Global template**: `config\farlands-g1.properties` (auto-created at mod
+   init) - the defaults for new worlds.
+3. **World file**: `<world folder>\farlands.properties` - edit it **outside**
+   the world; it applies when you re-enter.
+
+Per-key details: [configuration guide](CONFIG.en.md) section 0.
 
 ### 1.3 Crossing the window
 
@@ -84,8 +86,9 @@ after editing.
 | `worldgen_far_threshold` | Policy applies beyond this (blocks) | >= 0 (0 = everywhere) | Negative -> **JVM aborted**; 0 -> terrain rewritten everywhere (see R5) | Negative is meaningless |
 | `debug` | Log level | `0`-`3` | Out of range -> **JVM aborted**; `3` -> enormous output (see R3) | Four fixed levels; out-of-range is an error |
 
-JVM flags override: `-Dfarlands.<key>=<value>`. JVM flags have equal weight and
-are not persisted.
+JVM flags override: `-Dfarlands.<key>=<value>`. Priority JVM > world file >
+global template; JVM flags are not persisted. See [configuration
+guide](CONFIG.en.md) sections 0/3.
 
 ---
 
@@ -168,77 +171,12 @@ Verification: tested (2026-09 stress test: AppHangB1, killed via Task Manager).
 Disposition: none (user responsibility). Short visits/screenshots are fine;
 `/realtp` back for playing.
 
-### R7: Consequence descriptions must be factual
+### R7-R10: project working rules
 
-Prohibited: using words more severe than the actual phenomenon in consequence
-descriptions (e.g. "CPU burned up").
-
-Reason: exaggerated wording misleads severity judgement and devalues the real
-red lines. A consequence is a statement of fact, not rhetoric.
-
-Verification: corrected (this document, 2026-09).
-
-Disposition: none (writing rule). Factual wording examples: CPU saturation /
-high CPU usage / chunk desync / data corruption.
-
-### R8: Be rigorous and strict with the project
-
-Prohibited: concluding without verification, skipping verification steps, or
-relaxing existing verification discipline.
-
-Reason: a lack of rigour wastes time and produces wrong experimental results.
-Project history has repeatedly confirmed the cost (headless rig vs client
-differences caused several rounds of misjudgement; failing to check jar/mod
-patch-set match caused the double-conversion incident).
-
-Verification: project history (the five iron rules in ROADMAP).
-
-Disposition: none (working rule). Write expected results before each
-experiment and check them after; never deploy on a failed build; one variable
-per round; verify the code is actually running first.
-
-### R9: Deep terrain-generator debugging domain (noise / density-function level)
-
-Preconditions (all required before any experiment):
-
-1. **Baseline first**: record the unmodified baseline (fixed seed, fixed
-   coordinate set, version marker, terrain stats).
-2. **Fresh world**: experiments only in a fresh world (R5); never in an
-   irreplaceable save.
-3. **One variable**: change one parameter per round (R8).
-4. **Expectation first**: write the hypothesis and expected result before
-   running.
-5. **Data-based conclusions**: conclusions require measurements (height/block
-   stats/DF output/logs); "it looks different" is not evidence.
-6. **Numbered records**: log every experiment (id, parameter, seed,
-   coordinates, expected, observed, conclusion, files).
-
-Reason: noise parameters affect the whole generation chain and are not
-reliably judged by eye; without a baseline there is no comparison;
-unrigorous experiments produce wrong conclusions and waste time.
-
-Verification: pending (baseline process to be established before the first
-experiment).
-
-Disposition: none (working rule). Conclusions from experiments violating any
-of the above are void.
-
-### R10: Respect external records; conclusions are condition-specific
-
-Prohibited: claiming to overturn, correct or refute community/official records
-(e.g. the Minecraft Wiki); presenting this project's results as "more
-accurate" or as general conclusions.
-
-Reason: external records reflect their own experimental conditions (version,
-implementation, measurement method); this project's data comes from its own
-pipeline (epoch/local domain) and the two are not directly comparable.
-Overreaching claims are neither respectful nor rigorous.
-
-Verification: applied (the EXPERIMENTS.md phenomenon table is phrased as "a
-specific result under specific experimental conditions", 2026-09).
-
-Disposition: none (writing rule). Every result must state its experimental
-conditions and declare that it does not refute or correct external records.
+R7 (factual consequence descriptions), R8 (be rigorous and strict), R9 (deep
+terrain-generator debugging domain) and R10 (respect external records) are
+project working rules. Their single authoritative text is
+[AGENTS.md](../AGENTS.md); it is not duplicated here.
 
 ---
 
@@ -311,8 +249,6 @@ The system will not let you run with a broken config.
 
 ## Appendix: phenomenon coordinates
 
-| Real coordinate | Phenomenon | Verification |
-|---|---|---|
-| 2^53 (9.007e15) | Terrain stop point (adjacent samples merge) | tested |
-| 2^63 (9.223e18) | Far lands (2048-block homogeneous mosaic) | tested |
-| 1.8e308 | Water-column world (horizontal collapse + normal vertical) | tested |
+Far-domain phenomena (coordinates, mechanisms, verification status) are in
+[EXPERIMENTS.md](EXPERIMENTS.md) section 8 (specific results under specific
+experimental conditions; red line R10).

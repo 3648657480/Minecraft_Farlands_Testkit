@@ -1,6 +1,7 @@
 ﻿# FarLands G1
 
 > **中文** | [English](README.md)
+> 版本 1.0.0（权威：仓库根目录 VERSION）
 
 Minecraft 26.2 边境之地工具集：在**真实坐标**下探索到 2^63（终局 1e306）——
 不缩放、不假坐标、地形真实。
@@ -25,8 +26,8 @@ Minecraft 26.2 边境之地工具集：在**真实坐标**下探索到 2^63（�
 - **F3 真实坐标显示**：XYZ / Block / Chunk 显示真实坐标，超 double 精度自动切精确
   BigInteger 值；另有 `Local (in-epoch)`、`Epoch ... Laps (2^31)`、`Real double ULP`
   （量化步长）行；噪声读数改为真实坐标处采样
-- **世界配置自动创建**：新世界自动生成 `world/farlands.properties`
-  （纪元=原点）——开箱即用，无需 JVM 参数
+- **世界创建时配置**：创建世界界面的 FarLands 标签页在生成任何地形前设定纪元与
+  地形策略；新世界继承全局模板（见 [配置指南](docs/CONFIG.md)）
 - **流体 tick 限流**：压力测试发现的递归流体 tick 爆炸守卫
 
 ## 环境要求
@@ -40,21 +41,15 @@ Minecraft 26.2 边境之地工具集：在**真实坐标**下探索到 2^63（�
 gradlew clean build
 ```
 
-产物：`patcher-cli/build/libs/patcher-cli-1.0-SNAPSHOT.jar` 与
-`mod/build/libs/farlands-g1-mod-1.0-SNAPSHOT.jar`。
+产物：`patcher-cli/build/libs/patcher-cli-1.0.0.jar` 与
+`mod/build/libs/farlands-g1-mod-1.0.0.jar`。
 
 ## 安装
 
-1. 给你的客户端 jar 打补丁：
-```powershell
-java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true" `
-  -jar patcher-cli-1.0-SNAPSHOT.jar --in <你的26.2.jar> --out <fork.jar>
-```
-2. 用 fork jar 作为版本 jar（备份原版）
-3. 把模组 jar 放进 `mods/`
-4. 启动——无需任何 JVM 参数
-
-完整玩家指南见 [docs/USAGE.md](docs/USAGE.md)。
+1. 用 `patcher-cli-1.0.0.jar` 给你的客户端 jar 打补丁；用 fork jar 作为版本 jar（备份原版）。
+2. 把 `farlands-g1-mod-1.0.0.jar` 放进 `mods/` 并启动。
+3. 创建世界时在 FarLands 标签页设定纪元与地形选项。
+   完整流程见 [docs/USAGE.md](docs/USAGE.md)。
 
 ## 游戏内
 
@@ -69,32 +64,19 @@ java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true"
 
 ## 距离现象
 
-本项目管线下的测量结果。全部数值均为**特定实验条件下的特定结果**（本管线、其版本与位置），
-不构成对任何外部记录的否定或更正——见 [docs/USAGE.md](docs/USAGE.md) 红线 R10。
-
-| 真实坐标 | 现象（本项目条件下） |
-|---|---|
-| 2^53（9.007e15） | 症状起点：1 格采样量化为 2 格成对（地下细微、地表正常） |
-| 2^55（3.603e16） | 主地形量化：规则 8 格阶梯/条带（奶酪状） |
-| 2^56（7.206e16） | 平板结构 + 水面瓷砖（16 格） |
-| 2^63（9.223e18） | 128 区块同质拼图 |
-| ~1.80876436895e24 | 实测"地表主地形改变（条板/墙结构）"起点 |
-| >2.43e27 | 本条件下地形未终止（高度重复） |
-| 1.8e308 | 水柱世界（水平塌缩 + 垂直正常） |
-
-远域退化是**级联**：不同噪声在不同阈值失效（地下先、地表主地形后），
-因此不存在单一"起点"。
-
-现象区 = 观景区——几何极重，不适合长玩。
+测量过程、方法与实验条件见 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)。
+全部数值均为**特定实验条件下的特定结果**，不构成对外部记录的更正——
+红线见 [AGENTS.md](AGENTS.md)（R10）。
 
 ## 文档
 
-- [docs/USAGE.md](docs/USAGE.md) / [docs/USAGE.en.md](docs/USAGE.en.md) - 玩家指南
+- [docs/USAGE.md](docs/USAGE.md) / [docs/USAGE.en.md](docs/USAGE.en.md) - 玩家指南（安装、`/realtp`、配置入口、安全）
 - [docs/CONFIG.md](docs/CONFIG.md) / [docs/CONFIG.en.md](docs/CONFIG.en.md) - 配置参考 + 预设组合
 - [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) - 实验协议、F0 结果、远域现象表
 - [docs/REVIEW.md](docs/REVIEW.md) - 架构复习（坐标域、机制）
 - [docs/ROADMAP.md](docs/ROADMAP.md) - 里程碑与教训
 - [docs/WORKFLOW.md](docs/WORKFLOW.md) - 构建/测试/部署工作流
+- [AGENTS.md](AGENTS.md) - 约束性红线（R7-R10）与五条铁律
 - [docs/archive/](docs/archive/) - 历史设计文档（E 线、宽化容器）
 
 ## 许可

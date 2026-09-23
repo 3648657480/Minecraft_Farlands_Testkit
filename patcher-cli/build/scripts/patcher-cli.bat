@@ -70,7 +70,7 @@ echo location of your Java installation. 1>&2
 :execute
 @rem Setup the command line
 
-set CLASSPATH=%APP_HOME%\lib\patcher-cli-1.0-SNAPSHOT.jar;%APP_HOME%\lib\patcher-core-1.0-SNAPSHOT.jar;%APP_HOME%\lib\asm-commons-9.8.jar;%APP_HOME%\lib\asm-tree-9.8.jar;%APP_HOME%\lib\asm-9.8.jar
+set CLASSPATH=%APP_HOME%\lib\patcher-cli-1.0.0.jar;%APP_HOME%\lib\patcher-core-1.0.0.jar;%APP_HOME%\lib\asm-commons-9.8.jar;%APP_HOME%\lib\asm-tree-9.8.jar;%APP_HOME%\lib\asm-9.8.jar
 
 
 @rem Execute patcher-cli

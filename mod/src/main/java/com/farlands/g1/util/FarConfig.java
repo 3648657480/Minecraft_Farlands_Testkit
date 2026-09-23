@@ -35,6 +35,22 @@ public final class FarConfig {
     private static volatile double proSampleScale = 1.0;
 
     private static volatile Path file;
+    private static volatile Path globalFile;
+    private static volatile Properties globalTemplate;
+    private static volatile Properties draft;
+
+    /**
+     * Canonical key order. Every config source (global template, world draft,
+     * per-world file) uses these names.
+     */
+    private static final String[] KEYS = {
+        "epoch_x", "epoch_z",
+        "auto_relocate", "relocate_margin", "relocate_discard_over",
+        "fluid_tick_limit", "archive_dir",
+        "worldgen_sample_mode", "worldgen_sample_clamp", "worldgen_far_threshold",
+        "debug",
+        "pro_sample_offset_x", "pro_sample_offset_z", "pro_sample_scale"
+    };
 
     private FarConfig() {
     }
@@ -60,7 +76,22 @@ public final class FarConfig {
         FarProjection.resetEpoch();
         file = worldDir.resolve("farlands.properties");
         Properties p = new Properties();
-        if (Files.isRegularFile(file)) {
+        boolean fresh = !Files.isRegularFile(file);
+        if (fresh) {
+            // Brand-new world: seed from the world-creation draft (the FarLands
+            // tabs on the create-world screen) or, failing that, the global
+            // template. Configuration is therefore available BEFORE the world
+            // is generated - it is never invented out of nothing here.
+            Properties seed = draft != null ? draft : globalTemplate;
+            if (seed != null) {
+                for (String k : KEYS) {
+                    String v = seed.getProperty(k);
+                    if (v != null) {
+                        p.setProperty(k, v);
+                    }
+                }
+            }
+        } else {
             try (var in = Files.newInputStream(file)) {
                 p.load(in);
             } catch (Exception e) {
@@ -166,8 +197,9 @@ public final class FarConfig {
             epochBigZ = java.math.BigInteger.ZERO;
             System.out.println("[FarLands-G1] config auto-created (epoch = origin)");
         }
-        if (spawnset != null || !Files.isRegularFile(file)) {
+        if (spawnset != null || fresh) {
             save();
+            draft = null;
         }
     }
 
@@ -175,6 +207,113 @@ public final class FarConfig {
         String v = System.getProperty(jvmKey);
         if (v != null && !v.isEmpty()) {
             p.setProperty(fileKey, v);
+        }
+    }
+
+    /** Default value for every key (the seed for the global template). */
+    private static Properties defaultsProperties() {
+        Properties p = new Properties();
+        p.setProperty("epoch_x", "0");
+        p.setProperty("epoch_z", "0");
+        p.setProperty("auto_relocate", "true");
+        p.setProperty("relocate_margin", "100000");
+        p.setProperty("relocate_discard_over", "2147483647");
+        p.setProperty("fluid_tick_limit", "2000");
+        p.setProperty("archive_dir", "farlands_epochs");
+        p.setProperty("worldgen_sample_mode", "raw");
+        p.setProperty("worldgen_sample_clamp", "1e300");
+        p.setProperty("worldgen_far_threshold", "9007199254740992");
+        p.setProperty("debug", "0");
+        p.setProperty("pro_sample_offset_x", "0");
+        p.setProperty("pro_sample_offset_z", "0");
+        p.setProperty("pro_sample_scale", "1");
+        return p;
+    }
+
+    /**
+     * Loads (or creates) the global template at
+     * {@code config/farlands-g1.properties}. Called at mod init, before any
+     * world exists: this is how configuration becomes available BEFORE world
+     * creation. New worlds are seeded from it (or from the create-world UI).
+     */
+    public static void loadGlobalTemplate(Path configDir) {
+        try {
+            Files.createDirectories(configDir);
+            globalFile = configDir.resolve("farlands-g1.properties");
+            Properties p = defaultsProperties();
+            if (Files.isRegularFile(globalFile)) {
+                try (var in = Files.newInputStream(globalFile)) {
+                    p.load(in);
+                } catch (Exception e) {
+                    System.out.println("[FarLands-G1] global template read FAILED: " + e);
+                }
+            } else {
+                saveGlobalTemplate(p);
+            }
+            globalTemplate = p;
+            System.out.println("[FarLands-G1] global template loaded: " + globalFile);
+        } catch (Exception e) {
+            globalTemplate = defaultsProperties();
+            System.out.println("[FarLands-G1] global template FAILED: " + e);
+        }
+    }
+
+    /** The global template (defaults for new worlds); never null after init. */
+    public static Properties globalTemplate() {
+        return globalTemplate;
+    }
+
+    /** The pending create-world draft (client UI); null when none. */
+    public static Properties draft() {
+        return draft;
+    }
+
+    /** Sets the pending create-world draft; consumed by the next fresh load. */
+    public static void setDraft(Properties p) {
+        draft = p;
+    }
+
+    /** Writes a Properties as the global template (annotated). */
+    public static void saveGlobalTemplate(Properties p) {
+        Path f = globalFile;
+        if (f == null) {
+            return;
+        }
+        try {
+            StringBuilder sb = new StringBuilder();
+            sb.append("# ============================================================\n");
+            sb.append("#  FarLands G1 - GLOBAL TEMPLATE\n");
+            sb.append("#  Defaults for NEW worlds. Edit this file before creating a\n");
+            sb.append("#  world (or use the FarLands tabs on the create-world screen).\n");
+            sb.append("#  Per-world farlands.properties overrides this once created.\n");
+            sb.append("#  JVM flags override this file: -Dfarlands.<key>=<value>\n");
+            sb.append("# ============================================================\n");
+            sb.append('\n');
+            for (String k : KEYS) {
+                String v = p.getProperty(k);
+                if (v != null) {
+                    sb.append(k).append('=').append(v).append('\n');
+                }
+            }
+            Files.writeString(f, sb.toString());
+        } catch (Exception e) {
+            System.out.println("[FarLands-G1] global template write FAILED: " + e);
+        }
+    }
+
+    /**
+     * The single build version, read from the mod metadata (which the build
+     * fills from the repo-root {@code VERSION} file). Every banner and doc
+     * must agree with this - it is the authoritative version source.
+     */
+    public static String buildVersion() {
+        try {
+            return net.fabricmc.loader.api.FabricLoader.getInstance()
+                .getModContainer("farlands-g1")
+                .map(c -> c.getMetadata().getVersion().getFriendlyString())
+                .orElse("dev");
+        } catch (Throwable t) {
+            return "dev";
         }
     }
 
@@ -266,7 +405,7 @@ public final class FarConfig {
             sb.append("# scale MULTIPLIES them (>0). Defaults are strict no-ops.\n");
             sb.append("# These alter terrain generation itself (they morph the\n");
             sb.append("# terrain everywhere) - use only on fresh test worlds.\n");
-            sb.append("# Change them live with: /farlands config <key> <value>\n");
+            sb.append("# Set these on the world-creation screen (FarLands tab).\n");
             sb.append("pro_sample_offset_x=").append(proSampleOffsetX).append('\n');
             sb.append("pro_sample_offset_z=").append(proSampleOffsetZ).append('\n');
             sb.append("pro_sample_scale=").append(proSampleScale).append('\n');
@@ -344,188 +483,6 @@ public final class FarConfig {
     /** Pro: multiplies the noise input X/Z coordinates. Default 1 = no-op. */
     public static double proSampleScale() {
         return proSampleScale;
-    }
-
-    /** One-line status for /farlands. */
-    public static String status() {
-        return "[FarLands] epoch=" + (epochBigX != null ? epochBigX + "/" + epochBigZ : "n/a")
-            + "  debug=" + debug + "  sample=" + worldgenSampleMode
-            + "  pro(off=" + proSampleOffsetX + "/" + proSampleOffsetZ
-            + ", scale=" + proSampleScale + ")";
-    }
-
-    /** All keys as a multi-line list for /farlands config. */
-    public static String list() {
-        StringBuilder sb = new StringBuilder("[FarLands] config");
-        sb.append("\n epoch_x=").append(epochBigX).append("  epoch_z=").append(epochBigZ);
-        sb.append("\n auto_relocate=").append(autoRelocate)
-          .append("  relocate_margin=").append((long) relocateMargin)
-          .append("  relocate_discard_over=").append(relocateDiscardOver);
-        sb.append("\n fluid_tick_limit=").append(fluidTickLimit).append("  archive_dir=").append(archiveDir);
-        sb.append("\n worldgen_sample_mode=").append(worldgenSampleMode)
-          .append("  worldgen_sample_clamp=").append(worldgenSampleClamp)
-          .append("  worldgen_far_threshold=").append(worldgenFarThreshold);
-        sb.append("\n debug=").append(debug);
-        sb.append("\n pro_sample_offset_x=").append(proSampleOffsetX)
-          .append("  pro_sample_offset_z=").append(proSampleOffsetZ)
-          .append("  pro_sample_scale=").append(proSampleScale);
-        return sb.toString();
-    }
-
-    /**
-     * Live-set a key (validated, applied immediately and persisted). Returns a
-     * human-readable result for the chat. Epoch keys are refused: changing the
-     * epoch of a loaded world would desync chunks - use /realtp instead.
-     */
-    public static String set(String key, String value) {
-        try {
-            switch (key) {
-                case "epoch_x", "epoch_z" -> {
-                    return key + " is read-only here; use /realtp (relocation) instead";
-                }
-                case "auto_relocate" -> {
-                    if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
-                        return "auto_relocate must be true/false";
-                    }
-                    autoRelocate = Boolean.parseBoolean(value);
-                }
-                case "relocate_margin" -> {
-                    double v = Double.parseDouble(value);
-                    if (v < 0) {
-                        return "relocate_margin must be >= 0";
-                    }
-                    relocateMargin = v;
-                }
-                case "relocate_discard_over" -> {
-                    long v = Long.parseLong(value);
-                    if (v < 1) {
-                        return "relocate_discard_over must be >= 1";
-                    }
-                    relocateDiscardOver = v;
-                }
-                case "fluid_tick_limit" -> {
-                    int v = Integer.parseInt(value);
-                    if (v < 0) {
-                        return "fluid_tick_limit must be >= 0 (0 = unlimited)";
-                    }
-                    fluidTickLimit = v;
-                }
-                case "archive_dir" -> {
-                    String v = value.trim();
-                    if (v.isEmpty() || v.contains("..") || v.contains("/") || v.contains("\\")) {
-                        return "archive_dir must be a plain directory name";
-                    }
-                    archiveDir = v;
-                }
-                case "worldgen_sample_mode" -> {
-                    String v = value.trim();
-                    if (!"raw".equals(v) && !"clamp".equals(v) && !"quantize".equals(v)) {
-                        return "worldgen_sample_mode must be raw/clamp/quantize";
-                    }
-                    worldgenSampleMode = v;
-                }
-                case "worldgen_sample_clamp" -> {
-                    double v = Double.parseDouble(value);
-                    if (v <= 0 || !Double.isFinite(v)) {
-                        return "worldgen_sample_clamp must be positive finite";
-                    }
-                    worldgenSampleClamp = v;
-                }
-                case "worldgen_far_threshold" -> {
-                    long v = Long.parseLong(value);
-                    if (v < 0) {
-                        return "worldgen_far_threshold must be >= 0 (0 = everywhere)";
-                    }
-                    worldgenFarThreshold = v;
-                }
-                case "debug" -> {
-                    int v = Integer.parseInt(value);
-                    if (v < 0 || v > 3) {
-                        return "debug must be 0-3";
-                    }
-                    debug = v;
-                }
-                case "pro_sample_offset_x" -> {
-                    double v = Double.parseDouble(value);
-                    if (!Double.isFinite(v)) {
-                        return "pro_sample_offset_x must be finite";
-                    }
-                    proSampleOffsetX = v;
-                }
-                case "pro_sample_offset_z" -> {
-                    double v = Double.parseDouble(value);
-                    if (!Double.isFinite(v)) {
-                        return "pro_sample_offset_z must be finite";
-                    }
-                    proSampleOffsetZ = v;
-                }
-                case "pro_sample_scale" -> {
-                    double v = Double.parseDouble(value);
-                    if (v <= 0 || !Double.isFinite(v)) {
-                        return "pro_sample_scale must be > 0 and finite";
-                    }
-                    proSampleScale = v;
-                }
-                default -> {
-                    return "unknown key: " + key;
-                }
-            }
-        } catch (NumberFormatException e) {
-            return "invalid value for " + key + ": '" + value + "'";
-        }
-        save();
-        return key + " = " + value + " (applied live; persisted)";
-    }
-
-    /**
-     * Re-reads farlands.properties from disk and applies the live-safe keys.
-     * The epoch and relocation internals are left untouched (they are already
-     * bound to the loaded world).
-     */
-    public static void reload() {
-        Path f = file;
-        if (f == null || !Files.isRegularFile(f)) {
-            return;
-        }
-        Properties p = new Properties();
-        try (var in = Files.newInputStream(f)) {
-            p.load(in);
-        } catch (Exception e) {
-            System.out.println("[FarLands-G1] reload read FAILED: " + e);
-            return;
-        }
-        try {
-            autoRelocate = parseBool(p, "auto_relocate", autoRelocate);
-            relocateMargin = parseDouble(p, "relocate_margin", relocateMargin);
-            relocateDiscardOver = parseLong(p, "relocate_discard_over", relocateDiscardOver);
-            fluidTickLimit = (int) parseLong(p, "fluid_tick_limit", fluidTickLimit);
-            archiveDir = p.getProperty("archive_dir", archiveDir).trim();
-            worldgenSampleMode = p.getProperty("worldgen_sample_mode", worldgenSampleMode).trim();
-            worldgenSampleClamp = parseDouble(p, "worldgen_sample_clamp", worldgenSampleClamp);
-            worldgenFarThreshold = parseLong(p, "worldgen_far_threshold", worldgenFarThreshold);
-            debug = (int) parseLong(p, "debug", debug);
-            proSampleOffsetX = parseDouble(p, "pro_sample_offset_x", proSampleOffsetX);
-            proSampleOffsetZ = parseDouble(p, "pro_sample_offset_z", proSampleOffsetZ);
-            proSampleScale = parseDouble(p, "pro_sample_scale", proSampleScale);
-            System.out.println("[FarLands-G1] config reloaded from disk");
-        } catch (NumberFormatException e) {
-            System.out.println("[FarLands-G1] reload failed: " + e.getMessage());
-        }
-    }
-
-    private static boolean parseBool(Properties p, String key, boolean fallback) {
-        String v = p.getProperty(key);
-        return v == null ? fallback : Boolean.parseBoolean(v.trim());
-    }
-
-    private static double parseDouble(Properties p, String key, double fallback) {
-        String v = p.getProperty(key);
-        return v == null ? fallback : Double.parseDouble(v.trim());
-    }
-
-    private static long parseLong(Properties p, String key, long fallback) {
-        String v = p.getProperty(key);
-        return v == null ? fallback : Long.parseLong(v.trim());
     }
 
     public static String worldgenSampleMode() {

@@ -1,4 +1,6 @@
-﻿# E 线收官设计：单一纪元域（2^31-1 稳定 + 通向 2^63）
+﻿> ARCHIVED - historical design note; may not reflect the current implementation.
+
+# E 线收官设计：单一纪元域（2^31-1 稳定 + 通向 2^63）
 
 ## 0. 问题复盘（几十轮实验沉淀的认知）
 

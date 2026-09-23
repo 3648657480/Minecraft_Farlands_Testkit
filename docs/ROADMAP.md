@@ -1,5 +1,7 @@
 ﻿# 修复路线图与交界点
 
+> 版本 1.0.0（权威：仓库根目录 VERSION）
+
 原则：**每条修复线独立推进，每次只修到一个交界点；交界点之间的一切中间态用开关隔离，绝不混入主线。**
 
 > 状态（2026-09-23）：A–F 全部完成（E5，2026-09-20）；当前进入"远域现象研究"域（F0/R10）。
@@ -53,8 +55,8 @@ J5 [F]   2^63 里程碑：光照/实体/tick/结构全通                       
 
 ## 当前状态（2026-09-23）
 
-- 版本线：v0.5.3（Latest）
+- 版本线：1.0.0（权威：仓库根目录 VERSION）
 - 架构：local 域引擎（identity jar）+ BigInteger 精确纪元 + 归档式重定位
 - 实验域：F0 通过（BlockPos 修复后固体地形 = 原版，两轮一致）；现象表见 EXPERIMENTS §8
-- 红线：R1–R10（见 docs/USAGE.md）
+- 红线：R1–R6 见 docs/USAGE.md；R7–R10 见 AGENTS.md
 - F3：真实坐标显示（精确 BigInteger）+ Local (in-epoch) + Epoch Laps (2^31) + Real double ULP

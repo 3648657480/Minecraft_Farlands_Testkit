@@ -1,7 +1,8 @@
 ﻿# FarLands G1 Configuration Guide
 
-> Style: Strict Respect Style. A per-key reference for `farlands.properties`
-> plus preset combinations.
+> Version 1.0.0 (authority: repo-root VERSION)
+> Style: Strict Respect Style. The single configuration reference: global
+> template, create-world tabs, world file, and per-key details.
 > Every consequence carries a verification status. Unverified items are
 > treated as red lines by default.
 
@@ -9,31 +10,68 @@
 
 ## 0. Basics
 
-### 0.1 Location and creation
+Configuration has three sources, in priority order (high -> low):
 
-File: `<world folder>\farlands.properties`.
+```
+JVM override   -Dfarlands.<key>=<value>              at process start
+  > world file   <world folder>\farlands.properties    at world load
+    > global template  config\farlands-g1.properties   created at mod init
+```
 
-Created automatically the first time a world loads (epoch = origin, rest
-default).
+### 0.1 Global template
+
+File: `config\farlands-g1.properties` (Fabric config dir).
+
+Created: **at mod init**, before any world exists, auto-created with documented
+defaults.
+
+Purpose: the defaults for new worlds. You can edit it **before creating a
+world**; worlds created afterwards inherit those values. A dedicated server has
+no screen and uses the global template directly.
 
 | State | Behaviour |
 |---|---|
-| File missing | Auto-created (epoch = origin) |
+| File missing | Auto-created (with defaults) |
+| File present | Seed values for new worlds |
+
+### 0.2 Create-world tabs
+
+The create-world screen has two FarLands tabs (injected via a
+CreateWorldScreen mixin):
+
+| Tab | Fields |
+|---|---|
+| **FarLands** | `epoch_x`, `epoch_z`, `auto_relocate`, `relocate_margin`, `debug`; plus the **"Save as global default"** button |
+| **FarLands Terrain** | `worldgen_sample_mode`, `worldgen_sample_clamp`, `worldgen_far_threshold`, `pro_sample_offset_x`, `pro_sample_offset_z`, `pro_sample_scale` |
+
+**Execute**: on world creation these values are written to
+`<world>\farlands.properties` **before terrain generation**. Keys not shown on
+the tabs (`relocate_discard_over`, `fluid_tick_limit`, `archive_dir`) take the
+global template's values. If the tabs were never touched, the world file is
+seeded from the global template at **world load**.
+
+### 0.3 World file
+
+File: `<world folder>\farlands.properties`. This is the world's configuration.
+
+| State | Behaviour |
+|---|---|
+| File missing | Seeded from the global template at world load (epoch = origin) |
 | File present, keys missing | Missing keys take defaults; missing epoch = origin |
 | File present, malformed | **`POLICY VIOLATION` -> JVM aborted** (see R2) |
 
-### 0.2 When changes apply
+### 0.4 When changes apply
 
-| Parameter group | Applies at |
+**Configuration is never edited from inside a running world.**
+
+| Source | Applies at |
 |---|---|
-| `epoch_x` / `epoch_z` | world load (re-enter the world) |
-| everything else | world load (re-enter the world) |
-| JVM overrides | process start (not persisted) |
+| Create-world tabs | world creation (written to the world file before generation) |
+| World file | world load (back to the main menu and in again is enough; no process restart needed) |
+| Global template | seed values for **new** worlds only; no effect on existing worlds |
+| JVM override | process start (not persisted) |
 
-**Execute**: after editing, **re-enter the world** (back to the main menu and
-in again is enough; no process restart needed).
-
-### 0.3 Backup
+### 0.5 Backup
 
 **Execute**: copy `farlands.properties` to `farlands.properties.bak` before
 editing.
@@ -306,7 +344,8 @@ aborted**. Level 3 long-term -> enormous logs (disk/performance pressure, R3).
 
 ## 2. Presets
 
-Copy a block into `farlands.properties` (or change only the differing keys).
+Fill in the create-world tabs, or write only the differing keys into the world
+file.
 
 ### P1 Standard (default)
 
@@ -414,7 +453,8 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <launcher>
 Rules:
 
 - Key form: `-Dfarlands.<config key>=<value>` (one-to-one with file keys).
-- Priority: JVM flags **override** file values (equal weight, not persisted).
+- Priority: JVM overrides the world file, which overrides the global template
+  (JVM flags are not persisted).
 - Use for: temporary tests without editing the file.
 - **Warning**: JVM flags go through the same policy checks; invalid values
   halt the same way.
@@ -425,7 +465,8 @@ Rules:
 
 | Error | System behaviour |
 |---|---|
-| File missing | Auto-created (epoch = origin) |
+| Global template missing | Auto-created at mod init |
+| World file missing | Seeded from the global template at world load (epoch = origin) |
 | Missing keys | Defaults |
 | Malformed (non-number/non-boolean) | `POLICY VIOLATION` -> **JVM aborted** |
 | Out-of-range (debug=5, negatives) | `POLICY VIOLATION` -> **JVM aborted** |
@@ -487,20 +528,32 @@ JVM aborted.
 
 ---
 
-## 7. Live config: the `/farlands` command
+## 7. Create-world screen + global template
 
-`farlands.properties` is created on world entry, and you cannot leave the world
-to edit it - the command solves that:
+### 7.1 Tabs
 
-```
-/farlands                            status line (epoch/debug/sample/pro)
-/farlands config                     list all current values
-/farlands config <key> <value>       set one: applies live + persists
-/farlands reload                     re-read farlands.properties from disk
-```
+The create-world screen has two FarLands tabs; the choices are written to the
+world file before generation.
 
-- Applied live: read-at-use keys (debug, fluid_tick_limit, worldgen_*,
-  pro_*, auto_relocate, relocate_margin, archive_dir)
-- **epoch_x/epoch_z are refused** (changing a loaded world's epoch desyncs
-  chunks) - use `/realtp`
-- Permission: gamemasters (cheats enabled in singleplayer)
+- **FarLands**: `epoch_x`, `epoch_z`, `auto_relocate`, `relocate_margin`, `debug`
+- **FarLands Terrain**: `worldgen_sample_mode`, `worldgen_sample_clamp`, `worldgen_far_threshold`, `pro_sample_offset_x`, `pro_sample_offset_z`, `pro_sample_scale`
+
+The epoch can be chosen before creation - this is the solution to the "config is
+created on world entry but cannot be edited afterwards" contradiction.
+**"Save as global default"** writes the current tab values back to the global
+template.
+
+### 7.2 Global template
+
+- Path: `config\farlands-g1.properties` (Fabric config dir)
+- Auto-created at mod init (before any world), with documented defaults
+- New worlds (with or without the screen) inherit it
+- A dedicated server has no screen and uses the global template directly
+
+### 7.3 Changing an existing world
+
+**Execute**: leave the world -> edit `<world>\farlands.properties` (or the
+global template) -> re-enter the world.
+
+**Configuration is never edited from inside a running world.** Prefer `/realtp`
+for the epoch; a manual edit desyncs generated chunks (see R1).

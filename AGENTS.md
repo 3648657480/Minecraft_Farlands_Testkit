@@ -1,5 +1,7 @@
 ﻿# AGENTS.md
 
+> Version 1.0.0 (authority: repo-root VERSION)
+
 Working rules for any agent or contributor on this project.
 These are binding. Violations waste time and produce wrong experimental results.
 
@@ -48,15 +50,19 @@ claims.
   (sampling).
 - Fork jar must be identity-patched (wide + continuity + epoch flags) and
   kept in sync with the mod's patch set. Mismatch = double conversion.
-- Config is `world/farlands.properties`; invalid values halt the JVM by
-  design (`POLICY VIOLATION`).
+- Config sources: the global template `config/farlands-g1.properties`
+  (auto-created at init) and the per-world `farlands.properties` (set on the
+  create-world FarLands tabs, or edited outside the game), with
+  `-Dfarlands.<key>=<value>` JVM overrides on top. Invalid values halt the JVM
+  by design (`POLICY VIOLATION`).
 - Push only when the user's proxy is on; the user controls it.
 - Chinese files: use read/write/edit tools, never PowerShell
   Get-Content/Set-Content. Fork copies need UTF-8 BOM.
 
 ## References
 
-- Red lines R1-R8: `docs/USAGE.md` (zh) / `docs/USAGE.en.md` (en)
+- Player safety red lines R1-R6: `docs/USAGE.md` (zh) / `docs/USAGE.en.md` (en)
+- Canonical home of R7-R10 and the five iron rules: this file
 - Config reference + presets: `docs/CONFIG.md` / `docs/CONFIG.en.md`
 - Roadmap and lessons: `docs/ROADMAP.md`
 - Review: `docs/REVIEW.md`
