@@ -28,7 +28,7 @@ public abstract class SurfaceSystemProbeMixin {
             net.minecraft.world.level.biome.BiomeManager biomeManager, boolean useLegacyRandom,
             WorldGenerationContext generationContext, ChunkAccess chunk, NoiseChunk noiseChunk,
             SurfaceRules.RuleSource ruleSource, Set<?> possibleBiomes, CallbackInfo ci) {
-        if (System.getProperty("farlands.testgen") == null) return;
+        if (com.farlands.g1.util.FarConfig.testgen() == null) return;
         farlands$chunks++;
         if (farlands$chunks > 300) return;
         int minBlockX = chunk.getPos().getMinBlockX();

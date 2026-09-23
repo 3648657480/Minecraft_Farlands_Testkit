@@ -48,6 +48,10 @@ public class FlowingFluidRateLimitMixin {
             return; // unlimited
         }
         if (farlands$count.incrementAndGet() > max) {
+            if (farlands$count.get() == max + 1) {
+                com.farlands.g1.util.FarConfig.log(2,
+                    "fluid tick limit hit (" + max + "/tick); deferring the rest");
+            }
             ci.cancel();
         }
     }

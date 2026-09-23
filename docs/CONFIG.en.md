@@ -36,19 +36,20 @@ no screen and uses the global template directly.
 
 ### 0.2 Create-world tabs
 
-The create-world screen has two FarLands tabs (injected via a
+The create-world screen has three FarLands tabs (injected via a
 CreateWorldScreen mixin):
 
 | Tab | Fields |
 |---|---|
 | **FarLands** | `epoch_x`, `epoch_z`, `auto_relocate`, `relocate_margin`, `debug`; plus the **"Save as global default"** button |
-| **FarLands Terrain** | `worldgen_sample_mode`, `worldgen_sample_clamp`, `worldgen_far_threshold`, `pro_sample_offset_x`, `pro_sample_offset_z`, `pro_sample_scale` |
+| **Terrain** | `worldgen_sample_mode`, `worldgen_sample_clamp`, `worldgen_far_threshold`, `pro_sample_offset_x`, `pro_sample_offset_z`, `pro_sample_scale` |
+| **Test** | `testgen`, `testgen_stop`, `testgen_settle`, `testspawn`, `spawnset` |
 
 **Execute**: on world creation these values are written to
 `<world>\farlands.properties` **before terrain generation**. Keys not shown on
-the tabs (`relocate_discard_over`, `fluid_tick_limit`, `archive_dir`) take the
-global template's values. If the tabs were never touched, the world file is
-seeded from the global template at **world load**.
+the tabs (`fluid_tick_limit`, `archive_dir`) take the global template's values.
+If the tabs were never touched, the world file is seeded from the global template
+at **world load**.
 
 ### 0.3 World file
 
@@ -163,28 +164,7 @@ risky; negative is an error.
 
 ---
 
-### 1.4 `relocate_discard_over`
-
-| Item | Value |
-|---|---|
-| Meaning | Shifts larger than this (chunks) switch to archive mode |
-| Type | integer >= 1 (chunks) |
-| Default | `2147483647` (2^31-1) |
-| Verification | Archive mode: **tested** (E5) |
-
-**How to use**:
-
-- Default: shifts within 2^31 chunks use in-place shifting (old content
-  follows); larger shifts archive.
-- Note: `/realtp` always archives (this key only affects the shift path).
-
-**Wrong-value consequence**: < 1 -> **`POLICY VIOLATION` -> JVM aborted**.
-
-**Why**: shift amounts must be positive; 0 or negative is meaningless.
-
----
-
-### 1.5 `fluid_tick_limit`
+### 1.4 `fluid_tick_limit`
 
 | Item | Value |
 |---|---|
@@ -213,7 +193,7 @@ CPU saturation.
 
 ---
 
-### 1.6 `archive_dir`
+### 1.5 `archive_dir`
 
 | Item | Value |
 |---|---|
@@ -238,7 +218,7 @@ VIOLATION` -> JVM aborted**.
 
 ---
 
-### 1.7 `worldgen_sample_mode`
+### 1.6 `worldgen_sample_mode`
 
 | Item | Value |
 |---|---|
@@ -265,7 +245,7 @@ think your policy is active when it is not.
 
 ---
 
-### 1.8 `worldgen_sample_clamp`
+### 1.7 `worldgen_sample_clamp`
 
 | Item | Value |
 |---|---|
@@ -289,7 +269,7 @@ VIOLATION` -> JVM aborted**.
 
 ---
 
-### 1.9 `worldgen_far_threshold`
+### 1.8 `worldgen_far_threshold`
 
 | Item | Value |
 |---|---|
@@ -316,23 +296,26 @@ dangerous.
 
 ---
 
-### 1.10 `debug`
+### 1.9 `debug`
 
 | Item | Value |
 |---|---|
-| Meaning | Log level |
+| Meaning | Log level (functional: controls runtime log output) |
 | Type | `0` / `1` / `2` / `3` |
 | Default | `0` |
-| Verification | Out of range -> halt: **tested**; level-3 log volume: **simulated (not measured)** |
+| Verification | Out of range -> halt: **tested**; levels >0: **implemented** (level-3 volume treated as a red line) |
 
 **How to use**:
 
 | Value | Output | For |
 |---|---|---|
 | `0` | Off (key events only) | Normal play |
-| `1` | Basic events (epoch set, relocation) | Routine diagnostics |
-| `2` | Detailed (config reads, decision paths) | Deep diagnostics |
-| `3` | **Everything** (per-chunk / per-tick traces) | **Short diagnostics (R3)** |
+| `>=1` | Relocation summary (method: archive / translate / discard, files moved) | Routine diagnostics |
+| `>=2` | The above + fluid tick-limit hits (`fluid tick limit hit (N/tick)`) | Deep diagnostics |
+| `>=3` | The above + per-sample terrain-transform log (`sample axis=X mode=... real=... out=...`) - **enormous** | **Short diagnostics (R3)** |
+
+Levels are **cumulative**: `debug=2` emits both `>=1` and `>=2`; `debug=3` adds
+the per-sample log on top.
 
 **Wrong-value consequence**: out of 0-3 -> **`POLICY VIOLATION` -> JVM
 aborted**. Level 3 long-term -> enormous logs (disk/performance pressure, R3).
@@ -356,7 +339,6 @@ epoch_x=0
 epoch_z=0
 auto_relocate=true
 relocate_margin=100000
-relocate_discard_over=2147483647
 fluid_tick_limit=2000
 archive_dir=farlands_epochs
 worldgen_sample_mode=raw
@@ -528,15 +510,49 @@ JVM aborted.
 
 ---
 
-## 7. Create-world screen + global template
+## 7. Test-harness keys (experiment / headless)
 
-### 7.1 Tabs
+> **WARNING**: these keys are **experiment / headless controls**, not normal
+> play options. `testgen_stop` **saves and halts the integrated server** after a
+> test; use **test worlds only**. Consequences are yours.
 
-The create-world screen has two FarLands tabs; the choices are written to the
+These five keys used to exist only as JVM `-D` flags; they can now be written to
+the global template / world file, or filled in on the **Test** tab of the
+create-world screen.
+
+| Key | Default | Meaning | Consequence |
+|---|---|---|---|
+| `testgen` | `""` | Chunk regions to force-generate, format `cx,cz,n;cx,cz,n` (`n` = n x n region, default 1) | Prints a deterministic fingerprint: `wgHash` = SHA-256 of WORLD_SURFACE_WG + OCEAN_FLOOR_WG heightmaps + the quart biome grid, plus topY, biome and block probes. This is the A/B instrument |
+| `testgen_stop` | `false` | After testgen, wait `testgen_settle` ticks, then save and halt the integrated server | Scripted runs; **saves and terminates the game** |
+| `testgen_settle` | `200` | Settle ticks before the save | Larger is slower; too small may leave chunks unsettled |
+| `testspawn` | `false` | Run the spawn-search path headlessly | Reproduces world-entry failures (spawn-search anomalies) |
+| `spawnset` | `""` | Real coordinates `"x,y,z"` | Sets the real spawn and epoch together; empty string = no change |
+
+**How to use**:
+
+- A/B comparison: change one `worldgen_*` / `pro_*` key and compare the two
+  `wgHash` values - equal hashes mean identical terrain.
+- Crash reproduction: `testspawn=true` runs the spawn search headlessly; a stack
+  trace in the log reproduces it.
+- These keys also work as JVM `-D` flags: `-Dfarlands.testgen=...` (JVM wins
+  over the file, see section 3).
+
+**Wrong-value consequence**: malformed (`testgen` not `cx,cz,n;...`, `spawnset`
+not `x,y,z`, or negative `testgen_settle`) -> **`POLICY VIOLATION` -> JVM
+aborted**.
+
+---
+
+## 8. Create-world screen + global template
+
+### 8.1 Tabs
+
+The create-world screen has three FarLands tabs; the choices are written to the
 world file before generation.
 
 - **FarLands**: `epoch_x`, `epoch_z`, `auto_relocate`, `relocate_margin`, `debug`
-- **FarLands Terrain**: `worldgen_sample_mode`, `worldgen_sample_clamp`, `worldgen_far_threshold`, `pro_sample_offset_x`, `pro_sample_offset_z`, `pro_sample_scale`
+- **Terrain**: `worldgen_sample_mode`, `worldgen_sample_clamp`, `worldgen_far_threshold`, `pro_sample_offset_x`, `pro_sample_offset_z`, `pro_sample_scale`
+- **Test**: `testgen`, `testgen_stop`, `testgen_settle`, `testspawn`, `spawnset`
 
 The epoch can be chosen before creation - this is the solution to the "config is
 created on world entry but cannot be edited afterwards" contradiction.
@@ -549,14 +565,14 @@ template.
 - **Inputs stay disabled until you tick "I have read the manual and filled per it"**.
 - Language is automatic: Chinese for a Chinese game, English otherwise.
 
-### 7.2 Global template
+### 8.2 Global template
 
 - Path: `config\farlands-g1.properties` (Fabric config dir)
 - Auto-created at mod init (before any world), with documented defaults
 - New worlds (with or without the screen) inherit it
 - A dedicated server has no screen and uses the global template directly
 
-### 7.3 Changing an existing world
+### 8.3 Changing an existing world
 
 **Execute**: leave the world -> edit `<world>\farlands.properties` (or the
 global template) -> re-enter the world.

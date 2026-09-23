@@ -18,7 +18,6 @@ public final class FarConfig {
     // ---- relocation ----
     private static volatile boolean autoRelocate = true;
     private static volatile double relocateMargin = 100_000.0;
-    private static volatile long relocateDiscardOver = Integer.MAX_VALUE;
     // ---- performance ----
     private static volatile int fluidTickLimit = 2000;
     // ---- storage ----
@@ -33,6 +32,12 @@ public final class FarConfig {
     private static volatile double proSampleOffsetX = 0.0;
     private static volatile double proSampleOffsetZ = 0.0;
     private static volatile double proSampleScale = 1.0;
+    // ---- test harness: headless distance-phenomenon experiments ----
+    private static volatile String testgen = null;
+    private static volatile boolean testgenStop = false;
+    private static volatile int testgenSettle = 200;
+    private static volatile boolean testspawn = false;
+    private static volatile String spawnset = null;
 
     private static volatile Path file;
     private static volatile Path globalFile;
@@ -45,11 +50,12 @@ public final class FarConfig {
      */
     private static final String[] KEYS = {
         "epoch_x", "epoch_z",
-        "auto_relocate", "relocate_margin", "relocate_discard_over",
+        "auto_relocate", "relocate_margin",
         "fluid_tick_limit", "archive_dir",
         "worldgen_sample_mode", "worldgen_sample_clamp", "worldgen_far_threshold",
         "debug",
-        "pro_sample_offset_x", "pro_sample_offset_z", "pro_sample_scale"
+        "pro_sample_offset_x", "pro_sample_offset_z", "pro_sample_scale",
+        "testgen", "testgen_stop", "testgen_settle", "testspawn", "spawnset"
     };
 
     private FarConfig() {
@@ -63,7 +69,6 @@ public final class FarConfig {
         epochBigZ = null;
         autoRelocate = true;
         relocateMargin = 100_000.0;
-        relocateDiscardOver = Integer.MAX_VALUE;
         fluidTickLimit = 2000;
         archiveDir = "farlands_epochs";
         worldgenSampleMode = "raw";
@@ -73,6 +78,11 @@ public final class FarConfig {
         proSampleOffsetX = 0.0;
         proSampleOffsetZ = 0.0;
         proSampleScale = 1.0;
+        testgen = null;
+        testgenStop = false;
+        testgenSettle = 200;
+        testspawn = false;
+        spawnset = null;
         FarProjection.resetEpoch();
         file = worldDir.resolve("farlands.properties");
         Properties p = new Properties();
@@ -108,16 +118,20 @@ public final class FarConfig {
             } catch (Exception ignored) {
             }
         }
-        // JVM overrides
-        String spawnset = System.getProperty("farlands.spawnset");
-        if (spawnset != null && !spawnset.isEmpty()) {
-            String[] parts = spawnset.split(",");
-            p.setProperty("epoch_x", parts[0].trim());
-            p.setProperty("epoch_z", parts[2].trim());
+        // spawnset: JVM flag > world-file key; sets the epoch (and respawn)
+        String spawnsetSpec = System.getProperty("farlands.spawnset");
+        if (spawnsetSpec == null || spawnsetSpec.isEmpty()) {
+            spawnsetSpec = p.getProperty("spawnset", "");
+        }
+        if (!spawnsetSpec.isEmpty()) {
+            String[] parts = spawnsetSpec.split(",");
+            if (parts.length >= 3) {
+                p.setProperty("epoch_x", parts[0].trim());
+                p.setProperty("epoch_z", parts[2].trim());
+            }
         }
         override(p, "farlands.auto_relocate", "auto_relocate");
         override(p, "farlands.relocate_margin", "relocate_margin");
-        override(p, "farlands.relocate_discard_over", "relocate_discard_over");
         override(p, "farlands.fluid_tick_limit", "fluid_tick_limit");
         override(p, "farlands.archive_dir", "archive_dir");
         override(p, "farlands.worldgen_sample_mode", "worldgen_sample_mode");
@@ -127,6 +141,10 @@ public final class FarConfig {
         override(p, "farlands.pro_sample_offset_x", "pro_sample_offset_x");
         override(p, "farlands.pro_sample_offset_z", "pro_sample_offset_z");
         override(p, "farlands.pro_sample_scale", "pro_sample_scale");
+        override(p, "farlands.testgen", "testgen");
+        override(p, "farlands.testgen.stop", "testgen_stop");
+        override(p, "farlands.testgen.settle", "testgen_settle");
+        override(p, "farlands.testspawn", "testspawn");
 
         try {
             if (p.containsKey("epoch_x")) {
@@ -135,7 +153,6 @@ public final class FarConfig {
             }
             autoRelocate = Boolean.parseBoolean(p.getProperty("auto_relocate", "true"));
             relocateMargin = Double.parseDouble(p.getProperty("relocate_margin", "100000"));
-            relocateDiscardOver = Long.parseLong(p.getProperty("relocate_discard_over", "2147483647"));
             fluidTickLimit = Integer.parseInt(p.getProperty("fluid_tick_limit", "2000"));
             archiveDir = p.getProperty("archive_dir", "farlands_epochs").trim();
             worldgenSampleMode = p.getProperty("worldgen_sample_mode", "raw").trim();
@@ -145,6 +162,11 @@ public final class FarConfig {
             proSampleOffsetX = Double.parseDouble(p.getProperty("pro_sample_offset_x", "0"));
             proSampleOffsetZ = Double.parseDouble(p.getProperty("pro_sample_offset_z", "0"));
             proSampleScale = Double.parseDouble(p.getProperty("pro_sample_scale", "1"));
+            testgen = trimOrNull(p.getProperty("testgen"));
+            testgenStop = Boolean.parseBoolean(p.getProperty("testgen_stop", "false"));
+            testgenSettle = Integer.parseInt(p.getProperty("testgen_settle", "200"));
+            testspawn = Boolean.parseBoolean(p.getProperty("testspawn", "false"));
+            spawnset = trimOrNull(p.getProperty("spawnset"));
             // policy checks: reject invalid values outright
             if (!"true".equalsIgnoreCase(p.getProperty("auto_relocate", "true"))
                 && !"false".equalsIgnoreCase(p.getProperty("auto_relocate", "true"))) {
@@ -153,9 +175,6 @@ public final class FarConfig {
             }
             if (relocateMargin < 0) {
                 policyViolation("relocate_margin must be >= 0, got " + (long) relocateMargin);
-            }
-            if (relocateDiscardOver < 1) {
-                policyViolation("relocate_discard_over must be >= 1, got " + relocateDiscardOver);
             }
             if (fluidTickLimit < 0) {
                 policyViolation("fluid_tick_limit must be >= 0 (0 = unlimited), got " + fluidTickLimit);
@@ -187,6 +206,9 @@ public final class FarConfig {
             if (proSampleScale <= 0) {
                 policyViolation("pro_sample_scale must be > 0, got " + proSampleScale);
             }
+            if (testgenSettle < 0) {
+                policyViolation("testgen_settle must be >= 0, got " + testgenSettle);
+            }
         } catch (NumberFormatException e) {
             policyViolation("config parse failed: " + e.getMessage());
         }
@@ -203,6 +225,14 @@ public final class FarConfig {
         }
     }
 
+    private static String trimOrNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
     private static void override(Properties p, String jvmKey, String fileKey) {
         String v = System.getProperty(jvmKey);
         if (v != null && !v.isEmpty()) {
@@ -217,7 +247,6 @@ public final class FarConfig {
         p.setProperty("epoch_z", "0");
         p.setProperty("auto_relocate", "true");
         p.setProperty("relocate_margin", "100000");
-        p.setProperty("relocate_discard_over", "2147483647");
         p.setProperty("fluid_tick_limit", "2000");
         p.setProperty("archive_dir", "farlands_epochs");
         p.setProperty("worldgen_sample_mode", "raw");
@@ -227,6 +256,11 @@ public final class FarConfig {
         p.setProperty("pro_sample_offset_x", "0");
         p.setProperty("pro_sample_offset_z", "0");
         p.setProperty("pro_sample_scale", "1");
+        p.setProperty("testgen", "");
+        p.setProperty("testgen_stop", "false");
+        p.setProperty("testgen_settle", "200");
+        p.setProperty("testspawn", "false");
+        p.setProperty("spawnset", "");
         return p;
     }
 
@@ -241,6 +275,7 @@ public final class FarConfig {
             Files.createDirectories(configDir);
             globalFile = configDir.resolve("farlands-g1.properties");
             Properties p = defaultsProperties();
+            boolean created = false;
             if (Files.isRegularFile(globalFile)) {
                 try (var in = Files.newInputStream(globalFile)) {
                     p.load(in);
@@ -249,6 +284,21 @@ public final class FarConfig {
                 }
             } else {
                 saveGlobalTemplate(p);
+                created = true;
+            }
+            // keep the annotated file complete: if a newer version added keys,
+            // rewrite so the user can see and edit them
+            if (!created) {
+                boolean missing = false;
+                for (String k : KEYS) {
+                    if (!p.containsKey(k)) {
+                        missing = true;
+                        break;
+                    }
+                }
+                if (missing) {
+                    saveGlobalTemplate(p);
+                }
             }
             globalTemplate = p;
             System.out.println("[FarLands-G1] global template loaded: " + globalFile);
@@ -365,8 +415,6 @@ public final class FarConfig {
             sb.append("auto_relocate=").append(autoRelocate).append('\n');
             sb.append("# trigger distance from the edge (blocks, >= 100000)\n");
             sb.append("relocate_margin=").append((long) relocateMargin).append('\n');
-            sb.append("# shifts larger than this (chunks) switch to archive mode\n");
-            sb.append("relocate_discard_over=").append(relocateDiscardOver).append('\n');
             sb.append('\n');
             sb.append("# ---- performance ----\n");
             sb.append("# max fluid ticks per game tick (0 = unlimited; 2000 is safe\n");
@@ -409,6 +457,19 @@ public final class FarConfig {
             sb.append("pro_sample_offset_x=").append(proSampleOffsetX).append('\n');
             sb.append("pro_sample_offset_z=").append(proSampleOffsetZ).append('\n');
             sb.append("pro_sample_scale=").append(proSampleScale).append('\n');
+            sb.append('\n');
+            sb.append("# ---- test harness: headless distance-phenomenon experiments ----\n");
+            sb.append("# testgen forces generation of chunk regions and prints a\n");
+            sb.append("# deterministic fingerprint (wgHash / topY / biome / blocks).\n");
+            sb.append("# Format: cx,cz,n;cx,cz,n  (n = n x n region, default 1).\n");
+            sb.append("# testgen_stop=true settles, saves and halts the game after.\n");
+            sb.append("# testspawn runs the spawn-search path headlessly.\n");
+            sb.append("# spawnset=x,y,z sets the real spawn/epoch. Test worlds only.\n");
+            sb.append("testgen=").append(testgen == null ? "" : testgen).append('\n');
+            sb.append("testgen_stop=").append(testgenStop).append('\n');
+            sb.append("testgen_settle=").append(testgenSettle).append('\n');
+            sb.append("testspawn=").append(testspawn).append('\n');
+            sb.append("spawnset=").append(spawnset == null ? "" : spawnset).append('\n');
             Files.writeString(f, sb.toString());
         } catch (Exception e) {
             System.out.println("[FarLands-G1] config write FAILED: " + e);
@@ -458,10 +519,6 @@ public final class FarConfig {
         return relocateMargin;
     }
 
-    public static long relocateDiscardOver() {
-        return relocateDiscardOver;
-    }
-
     public static int fluidTickLimit() {
         return fluidTickLimit;
     }
@@ -500,5 +557,30 @@ public final class FarConfig {
     /** Debug level 0-3 (3 = enormous log output). */
     public static int debug() {
         return debug;
+    }
+
+    /** testgen spec "cx,cz,n;cx,cz,n", or null when disabled. */
+    public static String testgen() {
+        return testgen;
+    }
+
+    /** After testgen: settle, save and halt the game. */
+    public static boolean testgenStop() {
+        return testgenStop;
+    }
+
+    /** Settle ticks before save/halt (default 200). */
+    public static int testgenSettle() {
+        return testgenSettle;
+    }
+
+    /** Run the headless spawn-search path. */
+    public static boolean testspawn() {
+        return testspawn;
+    }
+
+    /** spawnset "x,y,z" (real coordinates), or null. */
+    public static String spawnset() {
+        return spawnset;
     }
 }

@@ -359,15 +359,21 @@ public final class FarProjection {
             return real;
         }
         String mode = com.farlands.g1.util.FarConfig.worldgenSampleMode();
+        double out;
         if ("clamp".equals(mode)) {
             double c = com.farlands.g1.util.FarConfig.worldgenSampleClamp();
-            return Math.max(-c, Math.min(c, real));
-        }
-        if ("quantize".equals(mode)) {
+            out = Math.max(-c, Math.min(c, real));
+        } else if ("quantize".equals(mode)) {
             double grid = 9007199254740992.0; // 2^53
-            return Math.rint(real / grid) * grid;
+            out = Math.rint(real / grid) * grid;
+        } else {
+            out = real;
         }
-        return real;
+        if (com.farlands.g1.util.FarConfig.debug() >= 3) {
+            System.out.println("[FarLands-G1] sample axis=" + (axis == 1 ? "Z" : "X")
+                + " mode=" + mode + " real=" + real + " out=" + out);
+        }
+        return out;
     }
 
     /** Real (signed, continuous) block coordinate as a double. */

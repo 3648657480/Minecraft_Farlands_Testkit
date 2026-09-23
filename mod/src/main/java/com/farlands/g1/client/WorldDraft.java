@@ -19,11 +19,12 @@ public final class WorldDraft {
 
     private static final String[] KEYS = {
         "epoch_x", "epoch_z",
-        "auto_relocate", "relocate_margin", "relocate_discard_over",
+        "auto_relocate", "relocate_margin",
         "fluid_tick_limit", "archive_dir",
         "worldgen_sample_mode", "worldgen_sample_clamp", "worldgen_far_threshold",
         "debug",
-        "pro_sample_offset_x", "pro_sample_offset_z", "pro_sample_scale"
+        "pro_sample_offset_x", "pro_sample_offset_z", "pro_sample_scale",
+        "testgen", "testgen_stop", "testgen_settle", "testspawn", "spawnset"
     };
 
     private static Properties draft;

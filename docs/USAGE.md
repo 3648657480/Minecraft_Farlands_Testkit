@@ -42,7 +42,7 @@ java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true"
 
 配置在**创建世界之前**设定，或**退出世界后**编辑文件，**绝不在运行中的世界内改配置**：
 
-1. **创建世界界面**：FarLands 标签页设定纪元与地形策略（生成前写入 `farlands.properties`）。
+1. **创建世界界面**：三个标签页（**FarLands** 纪元与重定位、**地形 / Terrain** 地形策略、**测试 / Test** 测试工具键）在生成前写入 `farlands.properties`。
 2. **全局模板**：`config\farlands-g1.properties`（模组初始化时自动创建）——新世界的默认值。
 3. **世界文件**：`<世界目录>\farlands.properties`——只能在**世界外**编辑，重新进入世界后生效。
 
@@ -73,7 +73,6 @@ java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true"
 | `epoch_x` / `epoch_z` | 世界原点（真实坐标） | 任意整数 | **已生成区块全部错位**（见红线 R1） | 无限制——但后果不可逆，系统无法检测 |
 | `auto_relocate` | 走路到窗口边缘自动重定位 | `true` / `false` | 非布尔值 → **JVM 中断** | 语义必须明确，静默降级会隐藏意图 |
 | `relocate_margin` | 触发距离（格） | ≥ 0 | 负数 → **JVM 中断**；过大 → 重定位过晚（仍可用） | 负数无意义；过小会频繁重定位 |
-| `relocate_discard_over` | 平移量超此值（chunk）改归档模式 | ≥ 1 | < 1 → **JVM 中断** | 平移量必须为正 |
 | `fluid_tick_limit` | 每游戏 tick 流体 tick 上限 | ≥ 0（0 = 无限） | 负数 → **JVM 中断**；过大 → 异常地形下 CPU 持续满载（见红线 R4） | 0 是合法语义（关闭限流），负数是错误 |
 | `archive_dir` | 纪元归档目录名 | 纯目录名 | 空/含 `/`、`\`、`..` → **JVM 中断** | 路径穿越会写到世界外 |
 | `worldgen_sample_mode` | 远处采样策略 | `raw` / `clamp` / `quantize` | 非法值 → **JVM 中断**；`clamp`/`quantize` 改变地形（见红线 R5） | 模式必须明确，拼写错误不能静默变 raw |
@@ -191,7 +190,7 @@ R7（后果描述写实）、R8（严谨严格）、R9（地形生成器深层�
 
 你可以调：
 
-- `auto_relocate`、`relocate_margin`、`relocate_discard_over`（重定位行为）
+- `auto_relocate`、`relocate_margin`（重定位行为）
 - `fluid_tick_limit`（性能取舍）
 - `worldgen_*`（地形实验——在新建世界）
 - `debug`（0-2 安全；3 见 R3）

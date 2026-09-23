@@ -59,6 +59,10 @@ public class MinecraftClientRelocateMixin {
             }
             System.out.println("[FarLands] translated " + n + " chunks, reloading world '" + levelId + "'");
             System.out.flush();
+            com.farlands.g1.util.FarConfig.log(1, "relocate done: moved=" + n
+                + " method=" + (req.archive ? "archive"
+                    : (Math.abs(req.dx) > Integer.MAX_VALUE || Math.abs(req.dz) > Integer.MAX_VALUE
+                        ? "discard" : "translate")));
             if (req.newEpochBigX != null) {
                 com.farlands.g1.util.FarConfig.setEpoch(req.newEpochBigX, req.newEpochBigZ);
                 System.out.println("[FarLands] epoch persisted: (" + req.newEpochBigX + "," + req.newEpochBigZ + ")");

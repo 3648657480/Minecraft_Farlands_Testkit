@@ -14,13 +14,21 @@ Single version authority and configuration before world creation.
   dir) is auto-created at mod init, before any world exists, with documented
   defaults. New worlds inherit it - configuration is usable before world
   creation.
-- **Create-world tabs**: the create-world screen gained two FarLands tabs (via a
-  `CreateWorldScreen` mixin):
+- **Create-world tabs**: the create-world screen gained three FarLands tabs (via
+  a `CreateWorldScreen` mixin):
   - "FarLands": `epoch_x`, `epoch_z`, `auto_relocate`, `relocate_margin`,
     `debug`, plus the "Save as global default" button.
-  - "FarLands Terrain": `worldgen_sample_mode`, `worldgen_sample_clamp`,
+  - "Terrain": `worldgen_sample_mode`, `worldgen_sample_clamp`,
     `worldgen_far_threshold`, `pro_sample_offset_x`, `pro_sample_offset_z`,
     `pro_sample_scale`.
+  - "Test": `testgen`, `testgen_stop`, `testgen_settle`, `testspawn`,
+    `spawnset` (headless experiment controls).
+- **Config audit**: removed the dead relocate\_discard\_over key (nothing read
+  it); `debug` is now functional (`>=1` relocation summary, `>=2` fluid
+  tick-limit hits, `>=3` per-sample terrain-transform log). The five
+  test-harness keys (`testgen`, `testgen_stop`, `testgen_settle`, `testspawn`,
+  `spawnset`) are now writable outside the JVM; `-Dfarlands.testgen` etc. still
+  work and win.
 - **World file written before generation**: on world creation,
   `<world>/farlands.properties` is written from those tabs before terrain
   generation. If the tabs were never touched, the world file is seeded from the

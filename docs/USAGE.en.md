@@ -45,8 +45,9 @@ Coordinates are always real coordinates. Arbitrary precision (`1e1000` is valid)
 Configuration is set **before world creation**, or edited in a file **after
 leaving the world** - **never from inside a running world**:
 
-1. **Create-world screen**: the FarLands tabs set the epoch and terrain policy
-   (written to `farlands.properties` before generation).
+1. **Create-world screen**: three tabs (**FarLands** for epoch/relocation,
+   **Terrain** for terrain policy, **Test** for test-harness keys) are written
+   to `farlands.properties` before generation.
 2. **Global template**: `config\farlands-g1.properties` (auto-created at mod
    init) - the defaults for new worlds.
 3. **World file**: `<world folder>\farlands.properties` - edit it **outside**
@@ -78,7 +79,6 @@ after editing.
 | `epoch_x` / `epoch_z` | World origin (real coordinate) | any integer | **All generated chunks desync** (see red line R1) | Unrestricted - but the consequence is irreversible and undetectable by the system |
 | `auto_relocate` | Auto re-center near the window edge | `true` / `false` | Non-boolean -> **JVM aborted** | Semantics must be explicit; silent fallback hides intent |
 | `relocate_margin` | Trigger distance (blocks) | >= 0 | Negative -> **JVM aborted**; too large -> late relocation (still usable) | Negative is meaningless; too small relocates constantly |
-| `relocate_discard_over` | Shifts larger than this (chunks) use archive mode | >= 1 | < 1 -> **JVM aborted** | Shift amounts must be positive |
 | `fluid_tick_limit` | Fluid ticks per game tick | >= 0 (0 = unlimited) | Negative -> **JVM aborted**; too large -> CPU saturation in anomalous terrain (see R4) | 0 is valid semantics (off); negative is an error |
 | `archive_dir` | Epoch archive directory name | plain directory name | Empty / contains `/`, `\`, `..` -> **JVM aborted** | Path traversal writes outside the world |
 | `worldgen_sample_mode` | Far sampling policy | `raw` / `clamp` / `quantize` | Invalid -> **JVM aborted**; `clamp`/`quantize` change terrain (see R5) | The mode must be explicit; a typo must not silently mean raw |
@@ -221,7 +221,7 @@ guards (fluid limit), not prohibitions.
 
 You may adjust:
 
-- `auto_relocate`, `relocate_margin`, `relocate_discard_over` (relocation behavior)
+- `auto_relocate`, `relocate_margin` (relocation behavior)
 - `fluid_tick_limit` (performance trade-off)
 - `worldgen_*` (terrain experiments - in a fresh world)
 - `debug` (0-2 safe; 3 see R3)

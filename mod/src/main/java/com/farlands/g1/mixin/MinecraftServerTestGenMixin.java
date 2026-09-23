@@ -11,6 +11,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.farlands.g1.util.FarConfig;
+
 import java.util.function.BooleanSupplier;
 
 /**
@@ -71,7 +73,7 @@ public abstract class MinecraftServerTestGenMixin {
      */
     @Unique
     private static void runSpawnSearch(MinecraftServer self) {
-        if (System.getProperty("farlands.testspawn") == null) return;
+        if (!FarConfig.testspawn()) return;
         try {
             net.minecraft.server.level.ServerLevel level = self.overworld();
             net.minecraft.core.BlockPos pos = self.getWorldData().overworldData().getRespawnData().pos();
@@ -116,7 +118,7 @@ public abstract class MinecraftServerTestGenMixin {
 
     @Unique
     private static void runSpawnSet(MinecraftServer self) {
-        String spec = System.getProperty("farlands.spawnset");
+        String spec = FarConfig.spawnset();
         if (spec == null || spec.isEmpty()) return;
         ServerLevel level = self.overworld();
         try {
@@ -142,7 +144,7 @@ public abstract class MinecraftServerTestGenMixin {
 
     @Unique
     private static void runTestGen(MinecraftServer self) {
-        String spec = System.getProperty("farlands.testgen");
+        String spec = FarConfig.testgen();
         if (spec == null || spec.isEmpty()) return;
         ServerLevel level = self.overworld();
         try {
@@ -197,8 +199,8 @@ public abstract class MinecraftServerTestGenMixin {
                 System.out.println(sb);
                 System.out.flush();
             }
-            if (System.getProperty("farlands.testgen.stop") != null) {
-                farlands$saveCountdown = Integer.getInteger("farlands.testgen.settle", 200);
+            if (FarConfig.testgenStop()) {
+                farlands$saveCountdown = FarConfig.testgenSettle();
                 System.out.println("[FarLands-Test] settling " + farlands$saveCountdown + " ticks before save");
                 System.out.flush();
             }

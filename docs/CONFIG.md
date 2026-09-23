@@ -32,15 +32,16 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 
 ### 0.2 创建世界标签页
 
-创建世界界面有两个 FarLands 标签页（通过 CreateWorldScreen 的 mixin 注入）：
+创建世界界面有三个 FarLands 标签页（通过 CreateWorldScreen 的 mixin 注入）：
 
 | 标签页 | 字段 |
 |---|---|
 | **FarLands** | `epoch_x`、`epoch_z`、`auto_relocate`、`relocate_margin`、`debug`；另有 **"Save as global default"** 按钮 |
-| **FarLands Terrain** | `worldgen_sample_mode`、`worldgen_sample_clamp`、`worldgen_far_threshold`、`pro_sample_offset_x`、`pro_sample_offset_z`、`pro_sample_scale` |
+| **地形 / Terrain** | `worldgen_sample_mode`、`worldgen_sample_clamp`、`worldgen_far_threshold`、`pro_sample_offset_x`、`pro_sample_offset_z`、`pro_sample_scale` |
+| **测试 / Test** | `testgen`、`testgen_stop`、`testgen_settle`、`testspawn`、`spawnset` |
 
 **执行**：世界创建时，这些值在**地形生成之前**写入 `<世界>\farlands.properties`。
-未列在标签页上的键（`relocate_discard_over`、`fluid_tick_limit`、`archive_dir`）取全局模板的值。
+未列在标签页上的键（`fluid_tick_limit`、`archive_dir`）取全局模板的值。
 若标签页从未改动，世界文件在**世界加载时**从全局模板播种。
 
 ### 0.3 世界文件
@@ -142,27 +143,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 
 ---
 
-### 1.4 `relocate_discard_over`
-
-| 项 | 值 |
-|---|---|
-| 含义 | 平移量超过此值（chunk）时，改用归档模式 |
-| 类型 | ≥ 1 的整数（chunk） |
-| 默认 | `2147483647`（2^31−1） |
-| 验证 | 归档模式：**已测试**（E5） |
-
-**怎么用**：
-
-- 默认：平移量 ≤ 2^31 chunk 时走"平移模式"（旧内容跟随），超过走归档。
-- 说明：`/realtp` 主动传送**总是**走归档模式（此参数只影响平移路径的判定）。
-
-**错误后果**：< 1 → **`POLICY VIOLATION` → JVM 中断**。
-
-**为什么**：平移量必须为正；0 或负无意义。
-
----
-
-### 1.5 `fluid_tick_limit`
+### 1.4 `fluid_tick_limit`
 
 | 项 | 值 |
 |---|---|
@@ -185,7 +166,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 
 ---
 
-### 1.6 `archive_dir`
+### 1.5 `archive_dir`
 
 | 项 | 值 |
 |---|---|
@@ -207,7 +188,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 
 ---
 
-### 1.7 `worldgen_sample_mode`
+### 1.6 `worldgen_sample_mode`
 
 | 项 | 值 |
 |---|---|
@@ -232,7 +213,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 
 ---
 
-### 1.8 `worldgen_sample_clamp`
+### 1.7 `worldgen_sample_clamp`
 
 | 项 | 值 |
 |---|---|
@@ -255,7 +236,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 
 ---
 
-### 1.9 `worldgen_far_threshold`
+### 1.8 `worldgen_far_threshold`
 
 | 项 | 值 |
 |---|---|
@@ -278,23 +259,25 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 
 ---
 
-### 1.10 `debug`
+### 1.9 `debug`
 
 | 项 | 值 |
 |---|---|
-| 含义 | 日志级别 |
+| 含义 | 日志级别（功能性：控制运行期日志输出） |
 | 类型 | `0` / `1` / `2` / `3` |
 | 默认 | `0` |
-| 验证 | 超范围 → halt：**已测试**；3 档日志量：**已模拟（未实测）** |
+| 验证 | 超范围 → halt：**已测试**；>0 各级日志：**已实现**（3 档日志量按红线对待） |
 
 **怎么用**：
 
 | 值 | 输出 | 适用 |
 |---|---|---|
 | `0` | 关闭（仅关键事件） | 正常游玩 |
-| `1` | 基础事件（epoch 设置、重定位） | 常规排查 |
-| `2` | 详细（含参数读取、决策路径） | 深度排查 |
-| `3` | **全部**（逐区块/逐 tick 追踪） | **短时诊断（R3）** |
+| `≥1` | 重定位摘要（方式：archive / translate / discard，移动文件数） | 常规排查 |
+| `≥2` | 上式 + 流体限流命中（`fluid tick limit hit (N/tick)`） | 深度排查 |
+| `≥3` | 上式 + 逐采样地形变换日志（`sample axis=X mode=... real=... out=...`）——**海量** | **短时诊断（R3）** |
+
+各级为**累加**：`debug=2` 同时输出 `≥1` 与 `≥2` 的内容；`debug=3` 再叠加逐采样日志。
 
 **错误后果**：超出 0-3 → **`POLICY VIOLATION` → JVM 中断**。`3` 长期开启 → 巨量日志（磁盘/性能压力，见 R3）。
 
@@ -315,7 +298,6 @@ epoch_x=0
 epoch_z=0
 auto_relocate=true
 relocate_margin=100000
-relocate_discard_over=2147483647
 fluid_tick_limit=2000
 archive_dir=farlands_epochs
 worldgen_sample_mode=raw
@@ -474,14 +456,40 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <游戏启动器>
 
 ---
 
-## 7. 创建世界界面 + 全局模板
+## 7. 测试工具键（实验 / headless）
 
-### 7.1 标签页
+> **警告**：下列键是**实验 / 无头（headless）控制**，不是普通游玩选项。
+> `testgen_stop` 会在测试后**保存并 halt 整合服务器**；只用于**测试世界**。后果自负。
 
-创建世界界面有两个 FarLands 标签页；选择在生成前写入世界文件。
+这 5 个键以前只在 JVM `-D` 下可用，现在也可写入全局模板 / 世界文件，或填在创建世界界面的**测试 / Test** 标签页。
+
+| 键 | 默认 | 含义 | 后果 |
+|---|---|---|---|
+| `testgen` | `""` | 强制生成的区块区域，格式 `cx,cz,n;cx,cz,n`（`n` = n×n 区域，默认 1） | 生成后打印确定性指纹：`wgHash` = WORLD_SURFACE_WG + OCEAN_FLOOR_WG 高度图 + quart 生物群系网格的 SHA-256，另附 topY、biome 与方块探针。这是 A/B 对照仪器 |
+| `testgen_stop` | `false` | testgen 后等待 `testgen_settle` tick，再保存并 halt 整合服务器 | 脚本化运行；**会保存并终止游戏** |
+| `testgen_settle` | `200` | 保存前的沉降 tick 数 | 越大越慢；过小可能区块未完成沉降 |
+| `testspawn` | `false` | 无头运行出生点搜索路径 | 复现进入世界失败（出生点搜索异常） |
+| `spawnset` | `""` | 真实坐标 `"x,y,z"` | 一并设置真实出生点与 epoch；空串 = 不改 |
+
+**怎么用**：
+
+- A/B 对照：只改一个 `worldgen_*` / `pro_*`，比较两次 `wgHash`——哈希相同即地形一致。
+- 崩溃复现：`testspawn=true` 无头跑出生点搜索；日志出现堆栈即复现。
+- 这些键同样可作为 JVM `-D` 标志：`-Dfarlands.testgen=…`（JVM 覆盖文件，见 §3）。
+
+**错误后果**：非法格式（`testgen` 不符合 `cx,cz,n;…`、`spawnset` 不符合 `x,y,z`、`testgen_settle` 为负）→ **`POLICY VIOLATION` → JVM 中断**。
+
+---
+
+## 8. 创建世界界面 + 全局模板
+
+### 8.1 标签页
+
+创建世界界面有三个 FarLands 标签页；选择在生成前写入世界文件。
 
 - **FarLands**：`epoch_x`、`epoch_z`、`auto_relocate`、`relocate_margin`、`debug`
-- **FarLands Terrain**：`worldgen_sample_mode`、`worldgen_sample_clamp`、`worldgen_far_threshold`、`pro_sample_offset_x`、`pro_sample_offset_z`、`pro_sample_scale`
+- **地形 / Terrain**：`worldgen_sample_mode`、`worldgen_sample_clamp`、`worldgen_far_threshold`、`pro_sample_offset_x`、`pro_sample_offset_z`、`pro_sample_scale`
+- **测试 / Test**：`testgen`、`testgen_stop`、`testgen_settle`、`testspawn`、`spawnset`
 
 在创建世界前即可填好 epoch——这正是"配置进世界才创建、进了世界又改不了"矛盾的解法。
 **"Save as global default"** 把当前标签页的值写回全局模板。
@@ -492,14 +500,14 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <游戏启动器>
 - **必须勾选"我已阅读手册，并照手册填写"**，输入项才可编辑；未勾选时全部禁用。
 - 语言自动：Minecraft 语言为中文时显示中文，其他语言显示英文。
 
-### 7.2 全局模板
+### 8.2 全局模板
 
 - 路径：`config\farlands-g1.properties`（Fabric 配置目录）
 - 由模组初始化时自动创建（任何世界之前），带注释默认值
 - 新世界（有界面或无界面）都从它继承
 - 专用服务器没有创建界面，直接使用全局模板
 
-### 7.3 修改已有世界
+### 8.3 修改已有世界
 
 **执行**：退出世界 → 编辑 `<世界>\farlands.properties`（或全局模板）→ 重新进入世界。
 

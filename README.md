@@ -31,9 +31,10 @@ rewrites them in place on your machine.
   switch to exact BigInteger values beyond double precision; extra lines show
   `Local (in-epoch)`, `Epoch ... Laps (2^31)` and the current `Real double ULP`
   (quantization step); the noise readouts sample at the real coordinates
-- **Configuration at world creation**: FarLands tabs on the create-world
-  screen set the epoch and terrain policy before any terrain is generated;
-  new worlds inherit a global template (see [CONFIG](docs/CONFIG.en.md))
+- **Configuration at world creation**: three FarLands tabs on the create-world
+  screen (FarLands / Terrain / Test) set the epoch, terrain policy and
+  headless test-harness keys before any terrain is generated; new worlds
+  inherit a global template (see [CONFIG](docs/CONFIG.en.md))
 - **Fluid tick rate limit**: guards against the recursive fluid-tick explosion
   found by stress testing
 

@@ -1,6 +1,7 @@
 package com.farlands.g1.mixin;
 
 import com.farlands.g1.client.FarLandsTerrainTab;
+import com.farlands.g1.client.FarLandsTestTab;
 import com.farlands.g1.client.FarLandsWorldTab;
 import com.farlands.g1.client.WorldDraft;
 import net.minecraft.client.Minecraft;
@@ -33,7 +34,8 @@ public class CreateWorldScreenMixin {
     private MenuTabBar.Builder farlands$addConfigTabs(MenuTabBar.Builder builder, Tab[] tabs) {
         return builder.addTabs(tabs)
             .addTab(new FarLandsWorldTab())
-            .addTab(new FarLandsTerrainTab());
+            .addTab(new FarLandsTerrainTab())
+            .addTab(new FarLandsTestTab());
     }
 
     @Inject(method = "createNewWorldDirectory", at = @At("RETURN"))
