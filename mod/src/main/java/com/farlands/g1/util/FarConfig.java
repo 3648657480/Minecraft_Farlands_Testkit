@@ -219,7 +219,7 @@ public final class FarConfig {
             epochBigZ = java.math.BigInteger.ZERO;
             System.out.println("[FarLands-G1] config auto-created (epoch = origin)");
         }
-        if (spawnset != null || fresh) {
+        if ((spawnsetSpec != null && !spawnsetSpec.isEmpty()) || fresh) {
             save();
             draft = null;
         }
