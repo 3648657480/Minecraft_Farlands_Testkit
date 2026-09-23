@@ -35,11 +35,23 @@ public final class FarLandsPatcher {
         return createDefault(
             Boolean.getBoolean("farlands.wide"),
             Boolean.getBoolean("farlands.continuity"),
-            Boolean.getBoolean("farlands.epoch"));
+            Boolean.getBoolean("farlands.epoch"),
+            unlockEnabled());
+    }
+
+    /**
+     * Opt-in unlock gate. BOTH flags are required so the lab tool can never be
+     * switched on by accident: {@code -Dfarlands.unlock=true}
+     * {@code -Dfarlands.unlock.i_know_what_im_doing=true}（「我知道我在做什么」）。
+     */
+    public static boolean unlockEnabled() {
+        return Boolean.getBoolean("farlands.unlock")
+            && Boolean.getBoolean("farlands.unlock.i_know_what_im_doing");
     }
 
     /** Explicit-flag variant: lets build tooling key its cache on the flags. */
-    public static FarLandsPatcher createDefault(boolean wide, boolean continuity, boolean epoch) {
+    public static FarLandsPatcher createDefault(boolean wide, boolean continuity, boolean epoch,
+            boolean unlock) {
         FarLandsPatcher p = new FarLandsPatcher();
         // 路线图隔离：每条线一个开关，只有通过交界点验收才并入默认构建。
         //   A 稳定线（默认）: 仅稳定性修复 + 访问器
@@ -77,6 +89,10 @@ public final class FarLandsPatcher {
         p.register(new DebugEntryPositionPatch());
         p.register(new SectionOcclusionGraphPatch());
         p.register(new WgrPatch());
+        if (unlock) {
+            // UNLOCK: opt-in lab tool, never registered by default (see docs/UNLOCK-DESIGN.md)
+            p.register(new OptionsUnlockPatch());
+        }
         return p;
     }
 

@@ -1,8 +1,18 @@
 # 解限模式设计（极限测试工具 · 未并入默认构建）
 
 > 版本 1.0.0（权威：仓库根目录 VERSION）
-> 状态：**设计稿，未实现，不并入默认构建**。
+> 状态：**已实现（基础）**——`OptionsUnlockPatch` + `unlock` 开关/门禁 + Vulkan 门控告警；**默认不注册**。
 > 适用红线：R7（后果写实）、R8（严谨）。
+
+---
+
+## 0.1 实现落点（2026-09-23）
+
+- `patcher-core`：`OptionsUnlockPatch`（抬高 `Options` 中 `options.renderDistance` / `options.simulationDistance` 的 `IntRange` 上限 32/16 → **96**）；`FarLandsPatcher.unlockEnabled()` 双门禁；`createDefault(...,unlock)`。
+- `buildSrc`：`G1JarProcessor.Spec` 纳入 `unlock`（进缓存键）。
+- `mod`：`client/UnlockWarn` + `mixin/MinecraftUnlockWarnMixin`（tick 前检查 `PreferredGraphicsApi`，非 Vulkan 则告警"顶点限制不会失效"）。
+- 已验证：补丁门禁（同时两旗才 patch）、字节码改写形态正确。**运行期启动测试待做。**
+- 待做：帧缓冲是否硬件限；Vulkan 路径下其余 mixin 兼容性；运行期实机验证。
 
 ---
 
