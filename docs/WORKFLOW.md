@@ -41,6 +41,8 @@ tools\server-test-nodel.ps1 -Tag "名字" -TestGen "0,0"
 
 - `-TestGen "cx,cz[,n]"`：生成 chunk（n×n 区域），输出 topY/biome/相邻格高度
 - `-SpawnSet "x,y,z"`：设 epoch（写配置文件）+ respawn
+- **种子**：现象实验必须固定并记录 `level-seed`（写在两侧 `server.properties`）；远域"起点坐标"**随种子浮动**，
+  不记种子 = 不可复现（见 [EXPERIMENTS.md](EXPERIMENTS.md) §8.1/§8.2）
 - 结果看 `RESULT(tag):` 行；日志在
   `C:\Users\EASON\AppData\Local\Temp\opencode\server-<tag>.log`
 

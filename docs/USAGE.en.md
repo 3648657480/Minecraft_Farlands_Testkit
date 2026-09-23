@@ -252,3 +252,11 @@ The system will not let you run with a broken config.
 Far-domain phenomena (coordinates, mechanisms, verification status) are in
 [EXPERIMENTS.md](EXPERIMENTS.md) section 8 (specific results under specific
 experimental conditions; red line R10).
+
+**Important: the phenomenon "onset coordinate" floats with the seed.**
+
+- The magnitude thresholds (2^53 / 2^55 / 2^56 / 2^63) are seed-independent; but *where* the
+  strip/wall structures begin to appear is decided by the **seed** (and the exact epoch value).
+- So a recorded coordinate is a **result for a specific seed**, not a universal coordinate; for a
+  new seed re-run the bisection ([EXPERIMENTS.md](EXPERIMENTS.md) sections 8.1/8.2) and record the
+  seed with it.
