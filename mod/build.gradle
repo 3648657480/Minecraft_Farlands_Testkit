@@ -88,6 +88,7 @@ tasks.register('worldDiff', JavaExec) {
     if (project.hasProperty('worldA')) args project.property('worldA')
     if (project.hasProperty('worldB')) args project.property('worldB')
     if (project.hasProperty('report')) args project.property('report')
+    if (project.hasProperty('dim')) systemProperty 'farlands.worlddiff.dim', project.property('dim')
     workingDir = rootProject.projectDir
 }
 tasks.register('translateSave', JavaExec) {
