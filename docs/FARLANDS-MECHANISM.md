@@ -9,9 +9,11 @@
 `PerlinNoise.wrap` 被反编译成 `return x`（no-op），而字节码与官方映射反编译（Vineflower）
 都显示它是**模运算补丁**。**参考一律以字节码或 genSources(Vineflower) 为准。**
 
-可信源获取：
-- `gradlew genSources` → `mod/.gradle/loom-cache/minecraftMaven/…-sources.jar`（Vineflower）
-- 其它版本：Mojang client jar + 官方 ProGuard 映射 → SpecialSource 重映射 → Vineflower。
+可信源获取（**不要再用 `-src`**）：
+- 本项目版本：`gradlew genSources` → `mod/.gradle/loom-cache/minecraftMaven/…-sources.jar`（Vineflower）
+- **任意版本**：`tools\gen-mc-sources.ps1 -Version 1.18.2`
+  （Mojang client jar + 官方 ProGuard 映射 → SpecialSource 重映射 → Vineflower 反编译）
+- 本文档的 1.18.2 样例即由该脚本生成。**注意："1.18.3" 不存在**（1.18 系列止于 1.18.2）。
 
 ## 1. Far Lands 机制（1.14.4 – 26.2）
 
