@@ -16,6 +16,7 @@
         "DensityFunctionsEndIslandMixin",
         "ChunkGeneratorMixin",
         "NoiseBasedChunkGeneratorCarverMixin",
+        "ChunkGeneratorDecorationMixin",
         "TreeFeatureMixin",
         "MineshaftSkipMixin",
         "FlowingFluidRateLimitMixin"
