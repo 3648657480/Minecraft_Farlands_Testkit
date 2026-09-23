@@ -96,12 +96,19 @@ mixin 里要用真实坐标，需要一个 mod 侧接口。
 
 ### 5.1 carver / feature 切入点（已定位，可信源）
 
-- **雕刻器**：`ChunkGenerator.applyCarvers` 是抽象方法，实现在 `NoiseBasedChunkGenerator`；
-  内部的 `WorldgenRandom` 用 **int chunk 坐标** 播种 → 远域按 local 周期重复。
-  **改点**：播种改用**真实 chunk 坐标**（`ChunkPos.xLong()/zLong()` 或 epoch 纪元），
-  且**仅在 |chunk| 超阈值时才切换**，保证正常坐标逐位不变。
+- **雕刻器（精确节点）**：`NoiseBasedChunkGenerator.applyCarvers` 内：
+  ```java
+  random.setLargeFeatureSeed(seed + index, sourcePos.x(), sourcePos.z());
+  if (carver.isStartChunk(random)) { carver.carve(...); }
+  ```
+  目标描述符 `setLargeFeatureSeed(JII)Lnet/minecraft/world/level/levelgen/WorldgenRandom;`
+  用的是 **int chunk 坐标** `sourcePos.x()/z()`（= local）→ 远域按 local 周期。
+  **改法**：对该调用点做 `@Redirect`，`isEpochActive()` 时用**真实 chunk 坐标**播种
+  （真实坐标超出 int，需自定义宽播种：参考 `WorldgenRandom.setLargeFeatureSeed` 的
+  `seed`+`x*341873128712L + z*132897987541L` 组合，把 x/z 换成真实 chunk 坐标的
+  BigInteger→long 混合）；未激活时原样调用。
 - **地物**：`levelgen/feature/*`（含 `EndIslandFeature`，及已有 `TreeFeatureMixin`）——
-  放置同样由 chunk 坐标播种 → 同法。
+  放置同样由 chunk 坐标播种（`setLargeFeatureSeed`/`setFeatureSeed`）→ 同法。
 - **注意**：改动会改变远域的全部笔刷/结构布局，属"真实距离现象"目标；必须与正常坐标
   隔离（阈值门控 + 无头 A/B）。
 
