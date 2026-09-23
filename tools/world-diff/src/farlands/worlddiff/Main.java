@@ -64,9 +64,10 @@ public final class Main {
         Path worldA = Path.of(args[0]);
         Path worldB = Path.of(args[1]);
         Path reportPath = args.length > 2 ? Path.of(args[2]) : null;
+        String dim = System.getProperty("farlands.worlddiff.dim", "overworld");
 
         List<String> report = new ArrayList<>();
-        int exit = compare(worldA, worldB, report);
+        int exit = compare(worldA, worldB, dim, report);
 
         String text = String.join(System.lineSeparator(), report);
         System.out.println(text);
@@ -79,11 +80,12 @@ public final class Main {
         System.exit(exit);
     }
 
-    private static int compare(Path worldA, Path worldB, List<String> report) throws Exception {
-        Path regionA = regionDir(worldA);
-        Path regionB = regionDir(worldB);
+    private static int compare(Path worldA, Path worldB, String dim, List<String> report) throws Exception {
+        Path regionA = regionDir(worldA, dim);
+        Path regionB = regionDir(worldB, dim);
         report.add("worldA: " + worldA);
         report.add("worldB: " + worldB);
+        report.add("dimension: " + dim);
         report.add("ignored keys: " + IGNORED_KEYS + " (volatile metadata, not terrain content)");
         report.add("regionA: " + (regionA != null ? regionA : "MISSING"));
         report.add("regionB: " + (regionB != null ? regionB : "MISSING"));
@@ -107,7 +109,7 @@ public final class Main {
         collectRegions(regionB, regions);
         report.add("regions: " + regions.size());
 
-        RegionStorageInfo info = new RegionStorageInfo("worlddiff", Level.OVERWORLD, "region");
+        RegionStorageInfo info = new RegionStorageInfo("worlddiff", dimKey(dim), "region");
         MessageDigest digestA = MessageDigest.getInstance("SHA-256");
         MessageDigest digestB = MessageDigest.getInstance("SHA-256");
 
@@ -215,14 +217,32 @@ public final class Main {
         }
     }
 
-    private static Path regionDir(Path world) {
-        Path modern = world.resolve("dimensions/minecraft/overworld/region");
+    private static String dimFolder(String dim) {
+        return switch (dim) {
+            case "the_end", "end", "ender" -> "the_end";
+            case "the_nether", "nether" -> "the_nether";
+            default -> "overworld";
+        };
+    }
+
+    private static net.minecraft.resources.ResourceKey<Level> dimKey(String dim) {
+        return switch (dim) {
+            case "the_end", "end", "ender" -> Level.END;
+            case "the_nether", "nether" -> Level.NETHER;
+            default -> Level.OVERWORLD;
+        };
+    }
+
+    private static Path regionDir(Path world, String dim) {
+        Path modern = world.resolve("dimensions/minecraft/" + dimFolder(dim) + "/region");
         if (Files.isDirectory(modern)) {
             return modern;
         }
-        Path legacy = world.resolve("region");
-        if (Files.isDirectory(legacy)) {
-            return legacy;
+        if ("overworld".equals(dimFolder(dim))) {
+            Path legacy = world.resolve("region");
+            if (Files.isDirectory(legacy)) {
+                return legacy;
+            }
         }
         return null;
     }

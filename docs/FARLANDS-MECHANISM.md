@@ -55,7 +55,8 @@ public static double wrap(final double x) {
 ## 4. 待办
 
 - [ ] A：把 `wrap` 失效边界做成可复现的数值/无头实验（对照 1.808e24）。
-- [ ] B：整数子系统（末地密度/carver/feature）真实坐标化（宽化）。
+- [~] B：末地岛屿密度已真实坐标化并通过无头验收（§6）；carver/feature 代码层完成（增量2/3），
+      待同样的无头验收。
 - [ ] 清理：不再依赖本地 `-src`，参考统一走可信源。
 
 ## 5. B 实现方案（可直接照做）
@@ -114,5 +115,56 @@ mixin 里要用真实坐标，需要一个 mod 侧接口。
 
 ### 5.2 已有测试维度支持（`02cac3e`）
 
-`MinecraftServerTestGenMixin` 支持 `-Dfarlands.testgen.dim=the_end|nether`；`worldDiff` 加 `-Pdim`。
+`MinecraftServerTestGenMixin` 支持 `-Dfarlands.testgen.dim=the_end|nether`；`worldDiff` 加 `-Pdim`
+（vanilla-rig 同步；`tools/exp-run.ps1`、`server-test.ps1` 加 `-Dim`）。
 用于在末地直接验证 5.1 的末地岛屿/地物改造。
+
+## 6. B 验证结果（增量 1：末地岛屿密度）
+
+> 全部数值为**特定实验条件下的特定结果**（R10）。条件：MC 26.2 / Fabric 0.19.3；
+> 种子 `12345`；WG 指纹仪器（`WORLD_SURFACE_WG`+`OCEAN_FLOOR_WG`+4×4 生物群系 SHA-256，
+> 见 `EXPERIMENTS.md` §2）；`-Dfarlands.wide/continuity/epoch=true`；`-Dim the_end`。
+
+### 6.1 正常坐标逐位零变化（端到端）
+
+mod（epoch=0）对照 vanilla-rig（无补丁 jar），同种子同坐标：
+
+| 区块 (cx,cz) | mod surf/floor | vanilla-rig surf/floor |
+|---|---|---|
+| (0,0) | `4f2ee214f69f` | `4f2ee214f69f` |
+| (62,62) | `5f4ecdb7b71c` | `5f4ecdb7b71c` |
+| (25000,25000) | `5f4ecdb7b71c` | `5f4ecdb7b71c` |
+
+`gradlew :mod:worldDiff -Pdim=the_end`：3 个 full/full 区块 identical、combined hash 相同、
+`VERDICT: IDENTICAL`。(25000,25000)=40 万方块（section=50000，落在 vanilla int 平方溢出区）。
+
+### 6.2 远域不再按 2^32 周期（端到端）
+
+同一局部区块，仅改 epoch（`-Dfarlands.spawnset`）：
+
+| epoch | (0,0) surf | (62,62) surf |
+|---|---|---|
+| `2^32 = 4294967296` | `d6f4a44b7018` | `da1504748017` |
+| `2^33 = 8589934592`（= 2^32 个方块之后） | `8813938d4b2c` | `b0b9fdb53ac2` |
+
+两者不同 → 无 2^32 周期。
+A/B 归因（E=2^32 时临时移除 `DensityFunctionsEndIslandMixin`）：(62,62) = `5f4ecdb7b71c`
+（即 epoch=0 的值）→ 未打补丁时整数子系统按 local 重复；打补丁后为 `da1504748017`。
+
+### 6.3 数值探针（`gradlew :mod:endIslandProbe`）
+
+- **正常范围**：对全部 vanilla 可达 section（`|section| ≤ 2^28`，含 int 平方溢出区）与
+  vanilla int 参照逐位一致（3 个种子，72033 点，0 mismatch）。
+- **路径切换**：`section=2^28` 走 vanilla-int 分支；`2^28+1` 走 wide 分支。
+- **远域**：epoch 2^32 与 2^33 的 wide 结果不同；local-int 参照两者相同（即 2^32 周期）。
+
+### 6.4 发现与修正（R8）
+
+增量 1 原实现是**纯 double** 版 `getHeightValue`。探针显示：当 `section ≥ 32768` 时它与 vanilla
+**不一致**——vanilla 的 `sectionX*sectionX` 是 **int** 运算会溢出，而末地世界边界（3000 万方块 →
+section 375 万）正落在此区间，属 **vanilla 可达**。
+修正：`EndIslandMath.heightValue` 在 `|section| ≤ 2^28` 时直接调用 vanilla int 版
+（`vanillaHeightValue`），超出才走 `wideHeightValue`。这样"正常坐标逐位零变化"覆盖
+vanilla 的全部可达范围，宽化只发生在 vanilla 无法表示的远域。
+实现见 `mod/.../runtime/EndIslandMath.java` + `mod/.../mixin/DensityFunctionsEndIslandMixin.java`；
+探针见 `tools/end-island-probe/`。

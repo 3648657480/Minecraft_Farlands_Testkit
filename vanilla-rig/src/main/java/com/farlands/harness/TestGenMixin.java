@@ -49,10 +49,22 @@ public abstract class TestGenMixin {
     }
 
     @Unique
+    private static ServerLevel harness$testLevel(MinecraftServer self) {
+        String dim = System.getProperty("farlands.testgen.dim", "overworld");
+        return switch (dim) {
+            case "the_end", "end", "ender" -> self.getLevel(net.minecraft.world.level.Level.END);
+            case "the_nether", "nether" -> self.getLevel(net.minecraft.world.level.Level.NETHER);
+            default -> self.overworld();
+        };
+    }
+
+    @Unique
     private static void runTestGen(MinecraftServer self) {
         String spec = System.getProperty("farlands.testgen");
         if (spec == null || spec.isEmpty()) return;
-        ServerLevel level = self.overworld();
+        ServerLevel level = harness$testLevel(self);
+        System.out.println("[FarLands-Test] dimension=" + level.dimension().identifier());
+        System.out.flush();
         try {
             // Same determinism control as the subject harness: random ticks use
             // the level RNG and grow plants, varying content between runs.

@@ -223,3 +223,33 @@ Wiki 记录基于其自身实验条件，本项目结果基于自研管线，二
 
 **F3 显示（本项目 1.0.0）**：XYZ/Block/Chunk 显示真实坐标（超 double 精度用 BigInteger 精确值）；
 另有 `Local (in-epoch)`、`Epoch ... Laps (2^31)`、`Real double ULP` 行。
+
+---
+
+## 9. B（整数子系统真实坐标化）记录
+
+### B-1 末地岛屿密度（`EndIslandDensityFunction`）—— 通过
+
+- 日期：2026-09-24
+- 假设：把 `getHeightValue(islandNoise, blockX()/8, blockZ()/8)` 的 **int local section**
+  换成真实 section（宽版），远域不再按 local int 重复；正常坐标逐位零变化。
+- 参数：种子 `12345`；flag wide/continuity/epoch=true；`-Dim the_end`；
+  `-Dfarlands.spawnset=<epoch>,100,0`；`Settle=200`；WG 指纹仪器（§2）。
+- 版本标记：`[FarLands-G1] 1.0.0 epoch build`；`[FarLands-Test] dimension=minecraft:the_end`。
+- 预期：正常 epoch=0 与 vanilla-rig 逐位一致；epoch 2^32 vs 2^33 指纹不同。
+- 实测（WG 指纹，surf=floor）：
+  - 正常：mod (0,0)=`4f2ee214f69f`、(62,62)=`5f4ecdb7b71c`、(25000,25000)=`5f4ecdb7b71c`
+    = vanilla-rig；`worldDiff -Pdim=the_end` IDENTICAL（3/3 full 相同，combined hash 同）。
+  - 远域：epoch 2^32 → (0,0)=`d6f4a44b7018`、(62,62)=`da1504748017`；
+    epoch 2^33 → (0,0)=`8813938d4b2c`、(62,62)=`b0b9fdb53ac2`（不同）。
+  - A/B（临时移除 `DensityFunctionsEndIslandMixin`，E=2^32）：(62,62)=`5f4ecdb7b71c`
+    （= epoch=0）→ 未补丁时 local 重复。
+- 数值探针（`:mod:endIslandProbe`）：正常 section（含 int 溢出区）3 种子 72033 点 0 mismatch；
+  `2^28` 走 vanilla-int、`2^28+1` 走 wide；广域 epoch 2^32/2^33 宽版不同、local 版相同。
+- 修正：原纯 double 版在 `section ≥ 32768`（vanilla int 平方溢出，末地世界边界内）与 vanilla 不一致；
+  改为 `|section| ≤ 2^28` 调 vanilla int 版、超出才 wide（`EndIslandMath`）。
+- 结论：本项目条件下，末地岛屿密度已真实坐标化；正常坐标（vanilla 全部可达范围）逐位零变化，
+  远域（epoch 2^32/2^33）不再周期。**不构成对外部记录的否定/更正**（R10）。
+- 证据：`exp-B-end-norm2-{mod,van}.log`、`exp-B-end-E232b.log`、`exp-B-end-E233b.log`、
+  `exp-B-end-E232-nomix.log`、`report-B-end-norm2.txt`；代码 `EndIslandMath` + `DensityFunctionsEndIslandMixin`。
+- 待办：carver/feature（增量 2/3，代码层已改）按同样协议做无头验收。

@@ -79,6 +79,7 @@ sourceSets {
         java {
             srcDir '../tools/chunk-translator/src'
             srcDir '../tools/world-diff/src'
+            srcDir '../tools/end-island-probe/src'
         }
     }
 }
@@ -89,6 +90,13 @@ tasks.register('worldDiff', JavaExec) {
     if (project.hasProperty('worldB')) args project.property('worldB')
     if (project.hasProperty('report')) args project.property('report')
     if (project.hasProperty('dim')) systemProperty 'farlands.worlddiff.dim', project.property('dim')
+    workingDir = rootProject.projectDir
+}
+// B line: numeric probe for the End island density real-coordinate patch.
+// Usage: gradlew :mod:endIslandProbe
+tasks.register('endIslandProbe', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'farlands.probe.EndIslandProbe'
     workingDir = rootProject.projectDir
 }
 tasks.register('translateSave', JavaExec) {

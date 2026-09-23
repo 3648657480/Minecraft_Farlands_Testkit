@@ -41,6 +41,9 @@ loom {
             if (System.getProperty('farlands.testgen.delay') != null) {
                 property 'farlands.testgen.delay', System.getProperty('farlands.testgen.delay')
             }
+            if (System.getProperty('farlands.testgen.dim') != null) {
+                property 'farlands.testgen.dim', System.getProperty('farlands.testgen.dim')
+            }
         }
     }
 }

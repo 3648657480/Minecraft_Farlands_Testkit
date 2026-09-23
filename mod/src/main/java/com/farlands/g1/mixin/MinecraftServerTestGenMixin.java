@@ -157,7 +157,7 @@ public abstract class MinecraftServerTestGenMixin {
         String spec = FarConfig.testgen();
         if (spec == null || spec.isEmpty()) return;
         ServerLevel level = farlands$testLevel(self);
-        System.out.println("[FarLands-Test] dimension=" + level.dimension().location());
+        System.out.println("[FarLands-Test] dimension=" + level.dimension().identifier());
         System.out.flush();
         try {
             // Determinism: random ticks use the level RNG (run-order dependent)
