@@ -57,3 +57,39 @@ public static double wrap(final double x) {
 - [ ] A：把 `wrap` 失效边界做成可复现的数值/无头实验（对照 1.808e24）。
 - [ ] B：整数子系统（末地密度/carver/feature）真实坐标化（宽化）。
 - [ ] 清理：不再依赖本地 `-src`，参考统一走可信源。
+
+## 5. B 实现方案（可直接照做）
+
+现状：`FunctionContextMixin` 用 mixin 给 `DensityFunction.FunctionContext` **注入** default
+`getBlockXDouble()`；普通 Java 类**看不到**它，所以只能靠 patcher 注入字节码调用。
+mixin 里要用真实坐标，需要一个 mod 侧接口。
+
+1. 新增 `mod/.../runtime/RealCoords.java`：
+   ```java
+   public interface RealCoords {
+       double getBlockXDouble();
+       double getBlockYDouble();
+       double getBlockZDouble();
+   }
+   ```
+2. 让 `FunctionContextMixin` **extends RealCoords**（default 方法即实现它）：
+   ```java
+   @Mixin(DensityFunction.FunctionContext.class)
+   public interface FunctionContextMixin extends RealCoords { /* 现有 default 方法不变 */ }
+   ```
+   这样任意 `FunctionContext` 运行时都可 `(RealCoords) ctx` 取真实坐标。
+3. `EndIslandDensityFunction`（`DensityFunctions` 内部私有静态类）加 mixin：
+   - `@Mixin(targets = "net.minecraft.world.level.levelgen.DensityFunctions$EndIslandDensityFunction")`
+   - `@Shadow private SimplexNoise islandNoise;`
+   - `@Overwrite public double compute(DensityFunction.FunctionContext ctx)`：
+     `RealCoords rc = (RealCoords) ctx;` → 用 `rc.getBlockXDouble()/8`、`getBlockZDouble()/8`
+   - `@Unique` 宽版 `getHeightValue`（把原 int 逻辑改成 **double**：`chunkX=truncate(sectionX/2)`、
+     `subSection=truncate(sectionX)%2`，与 vanilla 截断语义一致；`SimplexNoise.getValue(double,double)`）。
+   - **careful**：为满足"正常坐标逐位零变化"，必须在 |blockX|<2^31 时与 vanilla 完全同值
+     （负数的截断方向要对齐：用 `(long)(sectionX/2)` 而非 `Math.floor`）。
+4. 同样套路推进 `WorldCarver`、`levelgen/feature/*`（用 `ChunkPos.xLong()/zLong()` 宽坐标，B 线已有）。
+5. 注册到 `farlands-world.mixins.json`（与 `NoiseChunkRealCoordsMixin` 同组）。
+6. 验收（无头）：
+   - `tools/server-test.ps1 -Tag x -TestGen "0,0;62,62"` 正常坐标 → 与改动前逐位一致；
+   - `-SpawnSet "<远域>,100,0"` 远近对照 → 末地/地表不再按 2^32 周期；
+   - `gradlew :mod:worldDiff` 粗筛。
