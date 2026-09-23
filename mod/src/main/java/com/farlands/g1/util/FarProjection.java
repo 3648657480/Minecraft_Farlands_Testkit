@@ -369,11 +369,32 @@ public final class FarProjection {
         } else {
             out = real;
         }
-        if (com.farlands.g1.util.FarConfig.debug() >= 3) {
+        if (com.farlands.g1.util.FarConfig.debug() >= 3 && farlands$allowSampleLog()) {
             System.out.println("[FarLands-G1] sample axis=" + (axis == 1 ? "Z" : "X")
                 + " mode=" + mode + " real=" + real + " out=" + out);
         }
         return out;
+    }
+
+    // debug>=3 per-sample log: hard-capped so a stray debug=3 can never
+    // explode the log or stall the world (it used to log every sample).
+    private static final java.util.concurrent.atomic.AtomicInteger farlands$sampleLogs =
+        new java.util.concurrent.atomic.AtomicInteger();
+    private static final int farlands$SAMPLE_LOG_CAP = 2000;
+    private static volatile boolean farlands$sampleLogCapped = false;
+
+    private static boolean farlands$allowSampleLog() {
+        if (farlands$sampleLogCapped) {
+            return false;
+        }
+        if (farlands$sampleLogs.incrementAndGet() <= farlands$SAMPLE_LOG_CAP) {
+            return true;
+        }
+        farlands$sampleLogCapped = true;
+        System.out.println("[FarLands-G1] per-sample log capped at "
+            + farlands$SAMPLE_LOG_CAP + " lines; further samples suppressed");
+        System.out.flush();
+        return false;
     }
 
     /** Real (signed, continuous) block coordinate as a double. */
