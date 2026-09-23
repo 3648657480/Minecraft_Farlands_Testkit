@@ -93,3 +93,19 @@ mixin 里要用真实坐标，需要一个 mod 侧接口。
    - `tools/server-test.ps1 -Tag x -TestGen "0,0;62,62"` 正常坐标 → 与改动前逐位一致；
    - `-SpawnSet "<远域>,100,0"` 远近对照 → 末地/地表不再按 2^32 周期；
    - `gradlew :mod:worldDiff` 粗筛。
+
+### 5.1 carver / feature 切入点（已定位，可信源）
+
+- **雕刻器**：`ChunkGenerator.applyCarvers` 是抽象方法，实现在 `NoiseBasedChunkGenerator`；
+  内部的 `WorldgenRandom` 用 **int chunk 坐标** 播种 → 远域按 local 周期重复。
+  **改点**：播种改用**真实 chunk 坐标**（`ChunkPos.xLong()/zLong()` 或 epoch 纪元），
+  且**仅在 |chunk| 超阈值时才切换**，保证正常坐标逐位不变。
+- **地物**：`levelgen/feature/*`（含 `EndIslandFeature`，及已有 `TreeFeatureMixin`）——
+  放置同样由 chunk 坐标播种 → 同法。
+- **注意**：改动会改变远域的全部笔刷/结构布局，属"真实距离现象"目标；必须与正常坐标
+  隔离（阈值门控 + 无头 A/B）。
+
+### 5.2 已有测试维度支持（`02cac3e`）
+
+`MinecraftServerTestGenMixin` 支持 `-Dfarlands.testgen.dim=the_end|nether`；`worldDiff` 加 `-Pdim`。
+用于在末地直接验证 5.1 的末地岛屿/地物改造。
