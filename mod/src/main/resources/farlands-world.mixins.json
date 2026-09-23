@@ -15,6 +15,7 @@
         "FunctionContextMixin",
         "DensityFunctionsEndIslandMixin",
         "ChunkGeneratorMixin",
+        "NoiseBasedChunkGeneratorCarverMixin",
         "TreeFeatureMixin",
         "MineshaftSkipMixin",
         "FlowingFluidRateLimitMixin"

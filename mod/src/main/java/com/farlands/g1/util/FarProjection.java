@@ -109,6 +109,26 @@ public final class FarProjection {
         return epochBigZ;
     }
 
+    /**
+     * Seed offset for integer-domain carvers/features under the current epoch:
+     * 0 at the origin (so vanilla behavior is bit-identical) and a deterministic
+     * mix of the epoch chunk coordinates otherwise, so far-domain carvers and
+     * features do not repeat with the local int window.
+     */
+    public static long epochSeedOffset() {
+        if (!isEpochActive()) {
+            return 0L;
+        }
+        java.math.BigInteger bx = epochBigX();
+        java.math.BigInteger bz = epochBigZ();
+        if (bx == null || bz == null) {
+            return 0L;
+        }
+        long cx = bx.shiftRight(4).longValue();
+        long cz = bz.shiftRight(4).longValue();
+        return cx * 341873128712L + cz * 132897987541L;
+    }
+
     /** Exact real coordinate of a local block value. */
     public static java.math.BigInteger realBlockBigX(long local) {
         return epochBigX.add(java.math.BigInteger.valueOf(local));
