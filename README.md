@@ -86,6 +86,7 @@ the red lines in [AGENTS.md](AGENTS.md) (R10).
 - [docs/REVIEW.md](docs/REVIEW.md) - architecture review (coordinate domains, mechanisms)
 - [docs/ROADMAP.md](docs/ROADMAP.md) - milestones and lessons
 - [docs/WORKFLOW.md](docs/WORKFLOW.md) - build/test/deploy workflow
+- [docs/UNLOCK-DESIGN.md](docs/UNLOCK-DESIGN.md) - unlock-mode design note (opt-in lab tool, not in the default build)
 - [AGENTS.md](AGENTS.md) - binding red lines (R7-R10) and the five iron rules
 - [docs/archive/](docs/archive/) - historical design notes (E line, wide containers)
 

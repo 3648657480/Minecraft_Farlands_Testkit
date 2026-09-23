@@ -77,6 +77,7 @@ gradlew clean build
 - [docs/REVIEW.md](docs/REVIEW.md) - 架构复习（坐标域、机制）
 - [docs/ROADMAP.md](docs/ROADMAP.md) - 里程碑与教训
 - [docs/WORKFLOW.md](docs/WORKFLOW.md) - 构建/测试/部署工作流
+- [docs/UNLOCK-DESIGN.md](docs/UNLOCK-DESIGN.md) - 解限模式设计稿（opt-in 实验室工具，不并入默认构建）
 - [AGENTS.md](AGENTS.md) - 约束性红线（R7-R10）与五条铁律
 - [docs/archive/](docs/archive/) - 历史设计文档（E 线、宽化容器）
 
