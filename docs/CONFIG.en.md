@@ -543,6 +543,12 @@ created on world entry but cannot be edited afterwards" contradiction.
 **"Save as global default"** writes the current tab values back to the global
 template.
 
+**Screen behavior**:
+
+- A red warning asks you to read `docs/CONFIG.md` first and states that a wrong value aborts the game.
+- **Inputs stay disabled until you tick "I have read the manual and filled per it"**.
+- Language is automatic: Chinese for a Chinese game, English otherwise.
+
 ### 7.2 Global template
 
 - Path: `config\farlands-g1.properties` (Fabric config dir)

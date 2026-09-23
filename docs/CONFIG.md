@@ -486,6 +486,12 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <游戏启动器>
 在创建世界前即可填好 epoch——这正是"配置进世界才创建、进了世界又改不了"矛盾的解法。
 **"Save as global default"** 把当前标签页的值写回全局模板。
 
+**界面行为**：
+
+- 顶部红色警告要求先阅读 `docs/CONFIG.md`，并提示"错误值会让游戏立即中断"。
+- **必须勾选"我已阅读手册，并照手册填写"**，输入项才可编辑；未勾选时全部禁用。
+- 语言自动：Minecraft 语言为中文时显示中文，其他语言显示英文。
+
 ### 7.2 全局模板
 
 - 路径：`config\farlands-g1.properties`（Fabric 配置目录）
