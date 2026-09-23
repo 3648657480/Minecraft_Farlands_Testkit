@@ -2,7 +2,15 @@
 
 > 版本 1.0.0（权威：仓库根目录 VERSION）
 > 状态：**已实现（基础）**——`OptionsUnlockPatch` + `unlock` 开关/门禁 + Vulkan 门控告警；**默认不注册**。
+> **运行期实机测试：未做**（维护者因风险放弃实测）。启用者即成为该路径的第一测试者。
 > 适用红线：R7（后果写实）、R8（严谨）。
+
+> ## ⚠️ 强声明（启用前必读）
+> 本模块是**实验室极限工具**。解限会同时放大**渲染 / 区块生成 / 内存 / GPU** 负载：
+> **可能 OOM、GPU 驱动崩溃、系统过热、长时间无响应，甚至损坏存档或硬件。**
+> 它**默认关闭、不随默认构建发布**；启用即代表你已明确确认 **「我知道我在做什么」**，后果**完全自担**；
+> 本项目与作者**不承担任何责任**。
+> 事实上：**连本项目的维护者都不敢在自己机器上实测**。除非你完全清楚风险，否则**不要启用**。
 
 ---
 
@@ -11,8 +19,8 @@
 - `patcher-core`：`OptionsUnlockPatch`（抬高 `Options` 中 `options.renderDistance` / `options.simulationDistance` 的 `IntRange` 上限 32/16 → **96**）；`FarLandsPatcher.unlockEnabled()` 双门禁；`createDefault(...,unlock)`。
 - `buildSrc`：`G1JarProcessor.Spec` 纳入 `unlock`（进缓存键）。
 - `mod`：`client/UnlockWarn` + `mixin/MinecraftUnlockWarnMixin`（tick 前检查 `PreferredGraphicsApi`，非 Vulkan 则告警"顶点限制不会失效"）。
-- 已验证：补丁门禁（同时两旗才 patch）、字节码改写形态正确。**运行期启动测试待做。**
-- 待做：帧缓冲是否硬件限；Vulkan 路径下其余 mixin 兼容性；运行期实机验证。
+- 已验证：补丁门禁（同时两旗才 patch）、字节码改写形态正确。**运行期实机测试：未做（维护者因风险未测）。**
+- 待做：帧缓冲是否硬件限；Vulkan 路径下其余 mixin 兼容性；运行期实机验证（**由启用者承担**）。
 
 ---
 

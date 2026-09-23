@@ -2,6 +2,14 @@
 
 > Version 1.0.0 (authority: repo-root VERSION)
 
+## Unreleased
+
+- **UNLOCK lab module (opt-in, NOT in the default build)**: `OptionsUnlockPatch`
+  raises the render/simulation distance caps (32/16 -> 96); gated by
+  `-Dfarlands.unlock` AND `-Dfarlands.unlock.i_know_what_im_doing`; the client
+  logs a Vulkan gate warning at startup. See docs/UNLOCK-DESIGN.md.
+  **Runtime in-game test NOT performed (maintainer declined: high risk).**
+
 ## 1.0.0
 
 Single version authority and configuration before world creation.
