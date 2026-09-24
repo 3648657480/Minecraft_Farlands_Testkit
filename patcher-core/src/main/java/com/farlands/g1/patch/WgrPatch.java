@@ -10,29 +10,33 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
- * Prevents the "Requested chunk unavailable during world generation" crash
- * at extreme coordinates.
+ * Prevents the "Requested chunk unavailable during world generation" crash.
  *
- * <p>When the region center is beyond 134M chunks the requested coordinates
- * wrap around the 22-bit section epoch and the cache lookup legitimately
- * fails. Vanilla throws a crash report; the working fork build instead
- * returns the center chunk so generation keeps running. This patch inserts
- * the same guard in front of the throw site.</p>
+ * <p>Vanilla {@code WorldGenRegion.getChunk} hard-fails when the requested chunk
+ * is not in the region cache <em>and</em> {@code |centerChunk| <= 134M}. The
+ * epoch engine runs in the LOCAL domain, so the region center is small and this
+ * throw path is always reachable - structure/feature decoration (e.g.
+ * {@code MineshaftPieces.isInInvalidLocation} querying a biome outside the
+ * region) then crashes chunk generation.</p>
+ *
+ * <p>The fix rewrites the throw path: while the epoch is active, an unavailable
+ * chunk returns the region's center chunk (same degradation the fork build uses
+ * beyond 134M) instead of throwing. With the epoch dormant, vanilla behavior is
+ * unchanged.</p>
  */
 public final class WgrPatch implements ClassPatch {
 
     private static final String TARGET = "net/minecraft/server/level/WorldGenRegion";
+    private static final String PROJECTION = "com/farlands/g1/util/FarProjection";
     private static final String GET_CHUNK_DESC =
         "(IILnet/minecraft/world/level/chunk/status/ChunkStatus;Z)"
             + "Lnet/minecraft/world/level/chunk/ChunkAccess;";
-    private static final int EXTREME = 134_000_000;
 
     @Override
     public boolean matches(String internalName) {
@@ -55,8 +59,12 @@ public final class WgrPatch implements ClassPatch {
             throw new IllegalStateException(TARGET + "#getChunk" + GET_CHUNK_DESC + " not found");
         }
 
+        // Idempotency marker: our own injected call. (Do NOT key this on the
+        // 134000000 constant - vanilla's outer guard already contains it, which
+        // made the old check think the class was always already patched.)
         for (AbstractInsnNode n : getChunk.instructions) {
-            if (n instanceof LdcInsnNode ldc && ldc.cst instanceof Integer v && v == EXTREME) {
+            if (n instanceof MethodInsnNode mi && mi.getOpcode() == Opcodes.INVOKESTATIC
+                && PROJECTION.equals(mi.owner) && "isEpochActive".equals(mi.name)) {
                 return original; // already patched
             }
         }
@@ -73,27 +81,11 @@ public final class WgrPatch implements ClassPatch {
             throw new IllegalStateException(TARGET + ": IllegalStateException throw site not found");
         }
 
-        LabelNode retCenter = new LabelNode();
+        // Epoch active -> return this.center instead of throwing.
         LabelNode doThrow = new LabelNode();
         InsnList guard = new InsnList();
-        // Epoch domain: the region center is LOCAL (small), so the >134M guard
-        // below never fires even though structure/feature decoration can query a
-        // chunk outside the region (e.g. MineshaftPieces.isInInvalidLocation).
-        // Never hard-fail a chunk lookup while the epoch is active.
-        guard.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection",
-            "isEpochActive", "()Z", false));
-        guard.add(new JumpInsnNode(Opcodes.IFNE, retCenter));
-        guard.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        guard.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "centerChunkX", "I"));
-        guard.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Math", "abs", "(I)I", false));
-        guard.add(new LdcInsnNode(EXTREME));
-        guard.add(new JumpInsnNode(Opcodes.IF_ICMPGT, retCenter));
-        guard.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        guard.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "centerChunkZ", "I"));
-        guard.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Math", "abs", "(I)I", false));
-        guard.add(new LdcInsnNode(EXTREME));
-        guard.add(new JumpInsnNode(Opcodes.IF_ICMPLE, doThrow));
-        guard.add(retCenter);
+        guard.add(new MethodInsnNode(Opcodes.INVOKESTATIC, PROJECTION, "isEpochActive", "()Z", false));
+        guard.add(new JumpInsnNode(Opcodes.IFEQ, doThrow));
         guard.add(new VarInsnNode(Opcodes.ALOAD, 0));
         guard.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "center",
             "Lnet/minecraft/world/level/chunk/ChunkAccess;"));
