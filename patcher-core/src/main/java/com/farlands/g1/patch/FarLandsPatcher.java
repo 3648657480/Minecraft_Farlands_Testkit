@@ -53,8 +53,12 @@ public final class FarLandsPatcher {
      * {@code -Dfarlands.unlock.i_know_what_im_doing=true}（「我知道我在做什么」）。
      */
     public static boolean unlockEnabled() {
-        return Boolean.getBoolean("farlands.unlock")
-            && Boolean.getBoolean("farlands.unlock.i_know_what_im_doing");
+        // Disabled for normal testing: the UNLOCK lab tool (OptionsUnlockPatch +
+        // the client warning) is kept in the tree but never registered. Re-enable
+        // by restoring the two-flag gate below if ever needed:
+        //   return Boolean.getBoolean("farlands.unlock")
+        //       && Boolean.getBoolean("farlands.unlock.i_know_what_im_doing");
+        return false;
     }
 
     /** Explicit-flag variant: lets build tooling key its cache on the flags. */

@@ -19,8 +19,7 @@
         "ParticlePosMixin",
         "MinecraftServerRelocateMixin",
         "MinecraftClientRelocateMixin",
-        "CreateWorldScreenMixin",
-        "MinecraftUnlockWarnMixin"
+        "CreateWorldScreenMixin"
     ],
     "injectors": { "defaultRequire": 1 }
 }

@@ -168,3 +168,44 @@ section 375 万）正落在此区间，属 **vanilla 可达**。
 vanilla 的全部可达范围，宽化只发生在 vanilla 无法表示的远域。
 实现见 `mod/.../runtime/EndIslandMath.java` + `mod/.../mixin/DensityFunctionsEndIslandMixin.java`；
 探针见 `tools/end-island-probe/`。
+
+## 7. B 缺口批量扫描（26.2 可信源）
+
+判据：某处**直接拿整数/区块坐标当世界坐标去采噪声或播种**，而引擎在 epoch 下拿到的整数是
+**local**，就会在远域按 local 重复、不反映真实坐标。扫描对象：`NormalNoise.getValue` 直接调用、
+`SinglePointContext`、`PositionalRandomFactory`/`set*Seed`、以及 feature/structure 的整数字段。
+
+### 7.1 已覆盖
+
+| 子系统 | 实现 |
+|---|---|
+| 主噪声密度（Noise/ShiftedNoise） | `FunctionContextRealPatch`（global，continuity） |
+| 末地岛屿密度 | `EndIslandMath` + `DensityFunctionsEndIslandMixin`（增量1） |
+| 含水层上下文 / NoiseChunk 预表面 | `AquiferContextPatch`（SinglePointContext→RealContext） |
+| 生物群系气候（Climate$Sampler） | `AquiferContextPatch` 纳入 `Climate$Sampler`（增量4） |
+| 地表材质（SurfaceSystem） | `SurfaceSystemRealCoordsMixin`（增量4） |
+| 雕刻器播种 | `NoiseBasedChunkGeneratorCarverMixin`（seed offset，**近似**） |
+| 地物/装饰播种 | `ChunkGeneratorDecorationMixin`（seed offset，**近似**） |
+
+### 7.2 未覆盖（远域仍走 local，按优先级）
+
+| # | 子系统 | 代码位置 | 坐标 |
+|---|---|---|---|
+| 1 | 地表规则噪声条件 | `SurfaceRules` 425/447（Context.blockX/Z） | local block |
+| 2 | 地表规则随机 | `SurfaceRules` 815 | local |
+| 3 | `FindTopSurface` 内层上下文 | `DensityFunctions` 561（`context.blockX()`→新 SinglePointContext） | local（吃掉真实值） |
+| 4 | 矿脉 | `OreVeinifier` 43 | local block |
+| 5 | 结构放置播种 | `Structure` 240 / `StructurePlacement` 112 | local chunk |
+| 6 | 特定结构播种 | `OceanMonumentStructure` 61 / `StrongholdStructure` 29 | local chunk |
+| 7 | 雕刻器内含水层 | `WorldCarver` 171（SinglePointContext） | local |
+| 8 | 末地生物群系 | `TheEndBiomeSource` 72（SinglePointContext） | local |
+| 9 | 晶洞 | `GeodeFeature` 105 | local BlockPos |
+| 10 | 其余 feature 播种 | `levelgen/feature/*` | local（`TreeFeatureMixin` 已覆盖树木，余待核） |
+
+### 7.3 不相关
+
+- `Blender`（quart 坐标）：仅用于旧区块边界混合，非远域。
+- `NoiseBasedChunkGenerator` 165：仅 F3 调试屏。
+
+> 备注：3 是"链内"缺口（外层是 NoiseChunk 真实上下文，建内层 SinglePointContext 时又退回 int）；
+> 5/6 是结构与矿脉 —— 远域结构与矿脉布局会整体按 local 重复。这些都应像增量4一样逐个真实坐标化。
