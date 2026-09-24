@@ -18,6 +18,11 @@
         "NoiseBasedChunkGeneratorCarverMixin",
         "ChunkGeneratorDecorationMixin",
         "SurfaceSystemRealCoordsMixin",
+        "GeodeFeatureRealCoordsMixin",
+        "StructureGenerationContextRealSeedMixin",
+        "StructurePlacementRealSeedMixin",
+        "OceanMonumentStructureRealSeedMixin",
+        "StrongholdStructureRealSeedMixin",
         "TreeFeatureMixin",
         "MineshaftSkipMixin",
         "FlowingFluidRateLimitMixin"

@@ -31,7 +31,16 @@ public final class AquiferContextPatch implements ClassPatch {
         // sampled through a SinglePointContext built from the LOCAL block coords, so
         // biomes repeat with the local window at far coordinates. Routing it through
         // RealContext makes the biome noise use the real coordinate too.
-        "net/minecraft/world/level/biome/Climate$Sampler"
+        "net/minecraft/world/level/biome/Climate$Sampler",
+        // B line: FindTopSurface rebuilds an inner context from context.blockX()/blockZ()
+        // (int, local), throwing away the real coordinate the outer context carried.
+        "net/minecraft/world/level/levelgen/DensityFunctions$FindTopSurface",
+        // B line: the carver asks the aquifer for the substance at each carved block
+        // through a SinglePointContext (local) -> cave fluid uses local noise.
+        "net/minecraft/world/level/levelgen/carver/WorldCarver",
+        // B line: The End's biome source samples erosion through a SinglePointContext
+        // (local) built from the weird-section block coords.
+        "net/minecraft/world/level/biome/TheEndBiomeSource"
     );
     private static final String FROM = "net/minecraft/world/level/levelgen/DensityFunction$SinglePointContext";
     private static final String TO = "com/farlands/g1/runtime/RealContext";
