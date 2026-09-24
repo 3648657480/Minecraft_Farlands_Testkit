@@ -4,6 +4,73 @@
 
 ## Unreleased
 
+### Terrain / far-domain fixes
+
+- **Far-domain crash `Requested chunk unavailable during world generation`**:
+  `WgrPatch`'s idempotency check keyed on the constant `134000000`, which
+  vanilla's own `WorldGenRegion.getChunk` guard already contains -> the patch
+  always saw itself as applied and **never injected anything**; in the
+  local/epoch engine the region center is small, so the hard-fail branch was
+  always taken and structure decoration (e.g.
+  `MineshaftPieces.isInInvalidLocation` querying a biome outside the region)
+  crashed chunk generation. The guard now keys on our own injected
+  `FarProjection.isEpochActive` call and returns the center chunk while the
+  epoch is active.
+- **`/realtp` sampled one ULP off at extreme distances**: the epoch was floored
+  to a 16-block grid; at extreme magnitudes that can cross a double bucket
+  boundary (round-half-even then picks the lower double), so the target was
+  sampled one ULP low and the far lands did not trigger.
+  `floorTo16PreservingBucket` now aligns the epoch to the target's own double
+  bucket when the floor would change the bucket.
+- **Three patcher idempotency checks could be fooled by vanilla patterns**
+  (`AabbClipPatch` on `move(DDD)` - present in vanilla `AABB.clip`;
+  `BlockCollisionsPatch` on a method named `real`; `BoundingBoxPatch` on
+  `Math.clamp`). Rewritten to key on their own injected markers.
+- **Dev jar cache key included only the flags** (`wide/continuity/epoch/unlock`),
+  so changing the patch set reused a stale patched jar. `PATCH_REVISION` added
+  to `G1JarProcessor.Spec`.
+
+### Integer subsystems real-coordinate-ized (B line)
+
+Several generation subsystems still used the LOCAL int coordinate as if it were
+the world coordinate, so far-domain terrain / biomes / structures / ores
+repeated with the 2^32 local window while the main noise already used the real
+coordinate. Fixed individually (epoch-gated; origin bit-identical): End island
+density (`EndIslandMath`), carvers, features/decoration, biome climate
+(`Climate$Sampler` via `RealContext`), surface material (`SurfaceSystem`),
+density-chain `FindTopSurface`, carver aquifer (`WorldCarver`), The End biome
+source, geodes, structure seeding (`Structure$GenerationContext` /
+`StructurePlacement` / ocean monument / stronghold), ore veins, surface-rule
+noise (2D/3D) and vertical-gradient random.
+
+- **End island wide `getHeightValue` bit-exactness**: the pure-double wide
+  version diverged from vanilla for `section >= 32768` (vanilla's `int` square
+  overflows and the End world border is inside that range). `EndIslandMath` now
+  uses the vanilla `int` path for `|section| <= 2^28` and the wide path only
+  beyond.
+
+### Cleanup
+
+- Removed 8 unregistered / duplicate dead classes (incl. `DensityNoisePatch`,
+  `WorldGenRegionEpochPatch` and four never-registered mixins).
+- `FarProjection`: removed ~130 lines of unused conversion helpers and a
+  corrupted comment.
+- Stopped tracking build outputs / logs / rig run data (incl. a committed rcon
+  and management secret) and extended `.gitignore`.
+- Aligned docs (`EXPERIMENTS.md`, `FARLANDS-MECHANISM.md`, `CONFIG.md`) and the
+  `exp-run.ps1` defaults (Delay=300 / Settle=400 / BgThreads=1) with the code.
+
+### Research note - far-lands onset
+
+- Machine test (`topY` scan, 2 seeds) places the main-noise destruction at the
+  double bucket `k0 = 1808764368955220493860864` (the chronicle / INF bucket),
+  within 1 ULP and seed-independent. The previously recorded value
+  `1.80876436895000e24` is 19448 ULP below the onset and is superseded.
+- Added a default-off diagnostic `-Dfarlands.diag.exactwrap=true` (exact
+  `PerlinNoise.wrap`) to isolate the wrap mechanism's terrain impact.
+
+### Other
+
 - **UNLOCK lab module (opt-in, NOT in the default build)**: `OptionsUnlockPatch`
   raises the render/simulation distance caps (32/16 -> 96); gated by
   `-Dfarlands.unlock` AND `-Dfarlands.unlock.i_know_what_im_doing`; the client

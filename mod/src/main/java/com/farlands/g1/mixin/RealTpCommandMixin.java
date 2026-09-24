@@ -89,8 +89,8 @@ public class RealTpCommandMixin {
         BigInteger limit = BigInteger.valueOf(2_147_483_647L - 100_000L);
         if (FarProjection.isEpochActive()
             && (localX.abs().compareTo(limit) > 0 || localZ.abs().compareTo(limit) > 0)) {
-            BigInteger newEpochX = realX.divide(BigInteger.valueOf(16)).multiply(BigInteger.valueOf(16));
-            BigInteger newEpochZ = realZ.divide(BigInteger.valueOf(16)).multiply(BigInteger.valueOf(16));
+            BigInteger newEpochX = floorTo16PreservingBucket(realX);
+            BigInteger newEpochZ = floorTo16PreservingBucket(realZ);
             BigInteger shiftChunks = epochX.subtract(newEpochX).divide(BigInteger.valueOf(16));
             com.farlands.g1.FarRelocate.pending = new com.farlands.g1.FarRelocate.Request(
                 0, 0, newEpochX, newEpochZ, true);
@@ -117,6 +117,25 @@ public class RealTpCommandMixin {
             + ") -> local=(" + lx + "," + realY + "," + lz + ") targets=" + count);
         System.out.flush();
         return count;
+    }
+
+    /**
+     * Floor a real coordinate to the 16-block grid for the epoch, but never let
+     * that floor move the value into a different double bucket: the engine
+     * samples {@code double(epoch)}, so at extreme magnitudes flooring to 16 can
+     * cross the bucket boundary (e.g. ...359643137 floors to the exact boundary
+     * ...359643136, which round-half-even resolves to the LOWER double, silently
+     * dropping the target by one ULP and making the fold not trigger). When the
+     * floored value would change the bucket, align the epoch to the target's own
+     * double instead.
+     */
+    private static BigInteger floorTo16PreservingBucket(BigInteger real) {
+        BigInteger floored = real.divide(BigInteger.valueOf(16)).multiply(BigInteger.valueOf(16));
+        double d = real.doubleValue();
+        if (Double.isFinite(d) && floored.doubleValue() != d) {
+            floored = new BigDecimal(d).toBigInteger();
+        }
+        return floored;
     }
 
     private static String abbreviate(BigInteger v) {

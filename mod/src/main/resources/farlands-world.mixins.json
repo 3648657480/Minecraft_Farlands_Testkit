@@ -13,6 +13,7 @@
         "NoiseChunkMixin",
         "NoiseChunkRealCoordsMixin",
         "FunctionContextMixin",
+        "PerlinNoiseWrapDiagMixin",
         "DensityFunctionsEndIslandMixin",
         "ChunkGeneratorMixin",
         "NoiseBasedChunkGeneratorCarverMixin",
