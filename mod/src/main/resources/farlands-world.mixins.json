@@ -23,6 +23,10 @@
         "StructurePlacementRealSeedMixin",
         "OceanMonumentStructureRealSeedMixin",
         "StrongholdStructureRealSeedMixin",
+        "OreVeinifierRealRandomMixin",
+        "SurfaceRulesContext1NoiseMixin",
+        "SurfaceRulesContext2NoiseMixin",
+        "SurfaceRulesVerticalGradientMixin",
         "TreeFeatureMixin",
         "MineshaftSkipMixin",
         "FlowingFluidRateLimitMixin"

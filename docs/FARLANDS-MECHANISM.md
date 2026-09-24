@@ -186,21 +186,25 @@ vanilla 的全部可达范围，宽化只发生在 vanilla 无法表示的远域
 | 地表材质（SurfaceSystem） | `SurfaceSystemRealCoordsMixin`（增量4） |
 | 雕刻器播种 | `NoiseBasedChunkGeneratorCarverMixin`（seed offset，**近似**） |
 | 地物/装饰播种 | `ChunkGeneratorDecorationMixin`（seed offset，**近似**） |
+| `FindTopSurface` 内层上下文 | `AquiferContextPatch` 纳入 `DensityFunctions$FindTopSurface`（增量5） |
+| 雕刻器内含水层 | `AquiferContextPatch` 纳入 `carver/WorldCarver`（增量5） |
+| 末地生物群系 | `AquiferContextPatch` 纳入 `biome/TheEndBiomeSource`（增量5） |
+| 晶洞噪声 | `GeodeFeatureRealCoordsMixin`（增量5） |
+| 结构播种 | `StructureGenerationContextRealSeedMixin` / `StructurePlacementRealSeedMixin` / `OceanMonumentStructureRealSeedMixin` / `StrongholdStructureRealSeedMixin`（增量5，seed offset） |
+| 矿脉随机 | `OreVeinifierRealRandomMixin`（增量5，`FarRandom.at`） |
+| 地表规则噪声条件（2D/3D） | `SurfaceRulesContext1NoiseMixin` / `SurfaceRulesContext2NoiseMixin`（增量5） |
+| 地表规则竖直渐变随机 | `SurfaceRulesVerticalGradientMixin`（增量5） |
 
-### 7.2 未覆盖（远域仍走 local，按优先级）
+### 7.2 未覆盖
 
-| # | 子系统 | 代码位置 | 坐标 |
+| # | 子系统 | 位置 | 备注 |
 |---|---|---|---|
-| 1 | 地表规则噪声条件 | `SurfaceRules` 425/447（Context.blockX/Z） | local block |
-| 2 | 地表规则随机 | `SurfaceRules` 815 | local |
-| 3 | `FindTopSurface` 内层上下文 | `DensityFunctions` 561（`context.blockX()`→新 SinglePointContext） | local（吃掉真实值） |
-| 4 | 矿脉 | `OreVeinifier` 43 | local block |
-| 5 | 结构放置播种 | `Structure` 240 / `StructurePlacement` 112 | local chunk |
-| 6 | 特定结构播种 | `OceanMonumentStructure` 61 / `StrongholdStructure` 29 | local chunk |
-| 7 | 雕刻器内含水层 | `WorldCarver` 171（SinglePointContext） | local |
-| 8 | 末地生物群系 | `TheEndBiomeSource` 72（SinglePointContext） | local |
-| 9 | 晶洞 | `GeodeFeature` 105 | local BlockPos |
-| 10 | 其余 feature 播种 | `levelgen/feature/*` | local（`TreeFeatureMixin` 已覆盖树木，余待核） |
+| 1 | 其余 feature 播种 | `levelgen/feature/*` | `TreeFeatureMixin` 已覆盖树木；其余按需补 |
+| 2 | 其它 `PositionalRandomFactory`/`set*Seed` 调用点 | 全局 | 需继续审计（本表按已发现项维护） |
+
+> 判据不变：凡"直接拿 int/local 坐标当世界坐标"的采噪声/播种点，都要像增量4/5一样逐个
+> 真实坐标化（epoch 门控、原点逐位零变化）。整批改动后 正常坐标（epoch=0）与原版逐位一致
+> 已复验；远域 epoch=2^32 无崩溃。
 
 ### 7.3 不相关
 
