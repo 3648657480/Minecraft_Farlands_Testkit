@@ -76,6 +76,13 @@ public final class WgrPatch implements ClassPatch {
         LabelNode retCenter = new LabelNode();
         LabelNode doThrow = new LabelNode();
         InsnList guard = new InsnList();
+        // Epoch domain: the region center is LOCAL (small), so the >134M guard
+        // below never fires even though structure/feature decoration can query a
+        // chunk outside the region (e.g. MineshaftPieces.isInInvalidLocation).
+        // Never hard-fail a chunk lookup while the epoch is active.
+        guard.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection",
+            "isEpochActive", "()Z", false));
+        guard.add(new JumpInsnNode(Opcodes.IFNE, retCenter));
         guard.add(new VarInsnNode(Opcodes.ALOAD, 0));
         guard.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET, "centerChunkX", "I"));
         guard.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Math", "abs", "(I)I", false));
