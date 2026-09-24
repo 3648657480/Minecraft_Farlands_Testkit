@@ -1,7 +1,10 @@
 ﻿# FarLands G1
 
 > [中文说明](README.zh-CN.md) | **English**
-> Version 1.0.0 (authority: repo-root VERSION)
+> Version 1.0.1 (authority: repo-root VERSION)
+
+> **1.0.0 has a fatal far-domain crash - upgrade to 1.0.1** (see
+> [CHANGELOG.md](CHANGELOG.md)). If your startup banner shows `1.0.0`, update.
 
 Minecraft 26.2 Far Lands toolset: real-coordinate exploration up to 2^63
 (eventually 1e306) - no scaling, no fake coordinates, real terrain.

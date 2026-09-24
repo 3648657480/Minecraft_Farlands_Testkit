@@ -2,7 +2,14 @@
 
 > Version 1.0.0 (authority: repo-root VERSION)
 
-## Unreleased
+## 1.0.1
+
+> **FATAL - upgrade required.** `1.0.0` contains a far-domain crash
+> (`Requested chunk unavailable during world generation`): the `WgrPatch` guard
+> never actually applied, so structure decoration beyond the local window
+> crashes chunk generation. `1.0.1` fixes that, the `/realtp` one-ULP sampling
+> bug, and the integer subsystems that repeated with the 2^32 local window.
+> **If the startup banner shows `1.0.0`, update to `1.0.1`.**
 
 ### Terrain / far-domain fixes
 
