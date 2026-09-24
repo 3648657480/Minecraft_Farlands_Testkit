@@ -53,10 +53,12 @@ J5 [F]   2^63 里程碑：光照/实体/tick/结构全通                       
 4. 每轮只改一个变量
 5. 双端共享状态先上日志
 
-## 当前状态（2026-09-23）
+## 当前状态（2026-09-24）
 
-- 版本线：1.0.0（权威：仓库根目录 VERSION）
+- 版本线：**1.0.1**（权威：仓库根目录 VERSION；1.0.0 有致命远域崩溃，必升）
 - 架构：local 域引擎（identity jar）+ BigInteger 精确纪元 + 归档式重定位
 - 实验域：F0 通过（BlockPos 修复后固体地形 = 原版，两轮一致）；现象表见 EXPERIMENTS §8
+- B 线（整数子系统真实坐标化）：13 处已真实坐标化；远域起点机测定案见 EXPERIMENTS §8.3 / FARLANDS-MECHANISM §8
+- 修复：`WgrPatch` 从未注入导致的远域崩溃、`/realtp` 极远采样低 1 ULP（FARLANDS-MECHANISM §9）
 - 红线：R1–R6 见 docs/USAGE.md；R7–R10 见 AGENTS.md
 - F3：真实坐标显示（精确 BigInteger）+ Local (in-epoch) + Epoch Laps (2^31) + Real double ULP

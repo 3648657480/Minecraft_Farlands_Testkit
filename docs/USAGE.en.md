@@ -1,6 +1,7 @@
 ﻿# FarLands G1 Manual
 
-> Version 1.0.0 (authority: repo-root VERSION)
+> Version 1.0.1 (authority: repo-root VERSION)
+> **1.0.0 has a fatal far-domain crash - upgrade to 1.0.1** (see CHANGELOG.md).
 > Style: Strict Respect Style.
 > Directive, but explains why; zero-tolerance, but consequences are verified;
 > gives freedom, but does not indulge ignorance.
