@@ -35,12 +35,14 @@ public class G1JarProcessor implements MinecraftJarProcessor<G1JarProcessor.Spec
         private final boolean continuity;
         private final boolean epoch;
         private final boolean unlock;
+        private final int patchRevision;
 
-        public Spec(boolean wide, boolean continuity, boolean epoch, boolean unlock) {
+        public Spec(boolean wide, boolean continuity, boolean epoch, boolean unlock, int patchRevision) {
             this.wide = wide;
             this.continuity = continuity;
             this.epoch = epoch;
             this.unlock = unlock;
+            this.patchRevision = patchRevision;
         }
 
         @Override
@@ -52,18 +54,19 @@ public class G1JarProcessor implements MinecraftJarProcessor<G1JarProcessor.Spec
                 return false;
             }
             return wide == s.wide && continuity == s.continuity && epoch == s.epoch
-                && unlock == s.unlock;
+                && unlock == s.unlock && patchRevision == s.patchRevision;
         }
 
         @Override
         public int hashCode() {
-            return (wide ? 1 : 0) | (continuity ? 2 : 0) | (epoch ? 4 : 0) | (unlock ? 8 : 0);
+            return ((wide ? 1 : 0) | (continuity ? 2 : 0) | (epoch ? 4 : 0) | (unlock ? 8 : 0))
+                * 31 + patchRevision;
         }
 
         @Override
         public String toString() {
             return "wide=" + wide + " continuity=" + continuity + " epoch=" + epoch
-                + " unlock=" + unlock;
+                + " unlock=" + unlock + " patchRevision=" + patchRevision;
         }
     }
 
@@ -78,7 +81,8 @@ public class G1JarProcessor implements MinecraftJarProcessor<G1JarProcessor.Spec
             Boolean.getBoolean("farlands.wide"),
             Boolean.getBoolean("farlands.continuity"),
             Boolean.getBoolean("farlands.epoch"),
-            FarLandsPatcher.unlockEnabled());
+            FarLandsPatcher.unlockEnabled(),
+            FarLandsPatcher.PATCH_REVISION);
     }
 
     @Override

@@ -17,6 +17,7 @@
         "ChunkGeneratorMixin",
         "NoiseBasedChunkGeneratorCarverMixin",
         "ChunkGeneratorDecorationMixin",
+        "SurfaceSystemRealCoordsMixin",
         "TreeFeatureMixin",
         "MineshaftSkipMixin",
         "FlowingFluidRateLimitMixin"

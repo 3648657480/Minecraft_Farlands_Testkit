@@ -26,7 +26,12 @@ public final class AquiferContextPatch implements ClassPatch {
 
     private static final Set<String> TARGETS = Set.of(
         "net/minecraft/world/level/levelgen/Aquifer$NoiseBasedAquifer",
-        "net/minecraft/world/level/levelgen/NoiseChunk"
+        "net/minecraft/world/level/levelgen/NoiseChunk",
+        // B line: biome climate noise (temperature/humidity/continentalness/...) is
+        // sampled through a SinglePointContext built from the LOCAL block coords, so
+        // biomes repeat with the local window at far coordinates. Routing it through
+        // RealContext makes the biome noise use the real coordinate too.
+        "net/minecraft/world/level/biome/Climate$Sampler"
     );
     private static final String FROM = "net/minecraft/world/level/levelgen/DensityFunction$SinglePointContext";
     private static final String TO = "com/farlands/g1/runtime/RealContext";
