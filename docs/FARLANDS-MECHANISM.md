@@ -52,11 +52,17 @@ public static double wrap(final double x) {
 
 → 要"真实距离现象"，必须把这些整数子系统也纳入真实坐标（本质是本项目的**宽化**路线）。
 
+> 状态：截至增量 5，以上三处，以及后续批量扫描发现的更多整数消费者
+> （`Climate$Sampler`、`SurfaceSystem`、`FindTopSurface`、`WorldCarver`、`TheEndBiomeSource`、
+> `GeodeFeature`、结构播种、`OreVeinifier`、`SurfaceRules` 噪声/随机）均已真实坐标化，见 §7。
+> 上表为**立项时**的缺口清单，保留以说明来源。
+
 ## 4. 待办
 
 - [ ] A：把 `wrap` 失效边界做成可复现的数值/无头实验（对照 1.808e24）。
-- [~] B：末地岛屿密度已真实坐标化并通过无头验收（§6）；carver/feature 代码层完成（增量2/3），
-      待同样的无头验收。
+- [~] B：整数子系统真实坐标化——末地岛屿密度已通过无头验收（§6）；其余消费者（§7）已逐项改并验证
+      "正常坐标逐位零变化 + 远域不再按 2^32 周期"。仍未闭环：远域"可见起点随种子浮动"、崩溃面
+      （`WorldGenRegion.getChunk` 兜底）等需实机复核。
 - [ ] 清理：不再依赖本地 `-src`，参考统一走可信源。
 
 ## 5. B 实现方案（可直接照做）

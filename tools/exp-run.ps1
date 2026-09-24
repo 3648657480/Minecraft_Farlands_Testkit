@@ -6,9 +6,9 @@ param(
     [string]$Wide = "true",
     [string]$Continuity = "true",
     [string]$Epoch = "true",
-    [int]$Settle = 200,
-    [int]$Delay = 0,
-    [int]$BgThreads = 0,
+    [int]$Settle = 400,
+    [int]$Delay = 300,
+    [int]$BgThreads = 1,
     [string]$Extra = "",
     [string]$Dim = "",
     [int]$TimeoutMin = 15

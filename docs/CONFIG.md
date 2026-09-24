@@ -275,11 +275,11 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 | `0` | 关闭（仅关键事件） | 正常游玩 |
 | `≥1` | 重定位摘要（方式：archive / translate / discard，移动文件数） | 常规排查 |
 | `≥2` | 上式 + 流体限流命中（`fluid tick limit hit (N/tick)`） | 深度排查 |
-| `≥3` | 上式 + 逐采样地形变换日志（`sample axis=X mode=... real=... out=...`）——**海量** | **短时诊断（R3）** |
+| `≥3` | 上式 + 逐采样地形变换日志（`sample axis=X mode=... real=... out=...`），**硬上限 2000 行**（超出抑制并提示一次） | 短时诊断（R3） |
 
 各级为**累加**：`debug=2` 同时输出 `≥1` 与 `≥2` 的内容；`debug=3` 再叠加逐采样日志。
 
-**错误后果**：超出 0-3 → **`POLICY VIOLATION` → JVM 中断**。`3` 长期开启 → 巨量日志（磁盘/性能压力，见 R3）。
+**错误后果**：超出 0-3 → **`POLICY VIOLATION` → JVM 中断**。`3` 的逐采样日志已硬限流到 2000 行（`FarProjection`），长期开启不再刷爆日志。
 
 **为什么 4 档**：0/1/2/3 语义固定，越界是错误（不是"自动 clamp 到 3"）。
 
@@ -477,7 +477,9 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <游戏启动器>
 - 崩溃复现：`testspawn=true` 无头跑出生点搜索；日志出现堆栈即复现。
 - 这些键同样可作为 JVM `-D` 标志：`-Dfarlands.testgen=…`（JVM 覆盖文件，见 §3）。
 
-**错误后果**：非法格式（`testgen` 不符合 `cx,cz,n;…`、`spawnset` 不符合 `x,y,z`、`testgen_settle` 为负）→ **`POLICY VIOLATION` → JVM 中断**。
+**错误后果**：`testgen_settle` 为负 → **`POLICY VIOLATION` → JVM 中断**。
+但 `testgen` / `spawnset` 的**格式**目前**不做校验**：`testgen` 坏格式会在 testgen 阶段抛异常并打印
+`gen FAILED`（不中断 JVM）；`spawnset` 少于 3 段则**静默忽略**（不中断）。
 
 ---
 

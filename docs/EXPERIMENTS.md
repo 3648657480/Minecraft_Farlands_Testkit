@@ -56,8 +56,10 @@ testgen 规格串：`0,0;62,62;62500,62500;625000,625000;1812500,1812500`
 | 关闭随机刻 | harness 设 `random_tick_speed=0` |
 | 保存 tick | delay+settle（固定） |
 
-**重要（dev 缓存）**：dev jar 的补丁组由 `G1JarProcessor.Spec` 缓存（flags 已纳入缓存键）。
-若结果可疑，先看构建日志 `[FarLands-G1] Scanned ... patched ...` 行确认补丁真的应用了。
+**重要（dev 缓存）**：dev jar 的补丁组由 `G1JarProcessor.Spec` 缓存；缓存键 =
+`wide/continuity/epoch/unlock` + `FarLandsPatcher.PATCH_REVISION`。
+**任何补丁集改动都必须 bump `PATCH_REVISION`**，否则 loom 会复用旧 jar（曾因此误判补丁是否生效）。
+若结果可疑，看构建日志 `[FarLands-G1] Scanned ... patched ...` 行确认补丁真的应用了。
 
 ### 2.3 无条件补丁集（flags 全关也生效）
 
@@ -128,15 +130,16 @@ testgen 规格串：`0,0;62,62;62500,62500;625000,625000;1812500,1812500`
 
 | 对象 | 结论 |
 |---|---|
-| `Vec3iPatch` | 只新增 `getRealX/Y/Z` 访问器，无调用方 → 惰性 |
+| `Vec3iPatch` | 新增 `getRealX/Y/Z` 访问器，**被 `AabbClipPatch` 调用**（改 `AABB.clip` 的 move 参数）→ 正常坐标下为恒等，无影响 |
 | `GsuPatch` | 客户端渲染器（GlobalSettingsUniform）→ 与地形无关 |
-| `WgrPatch` | 仅 `\|centerChunk\| > 134M` 触发（P3=625k chunk）→ 不触发 |
+| `WgrPatch` | 已改为 `isEpochActive()` 门控（原 `\|centerChunk\|>134M` 守卫在 local/epoch 域永不触发，且因幂等检测写错实际从未注入——见 WgrPatch 修复提交）。正常坐标下只是"查不到 chunk 返回 center"的兜底，不改变生成 |
 | `BoundingBoxPatch` | 正常坐标下 `minX/maxX` clamp 为 no-op；`getLength` 与原版一致（无 +1）；Beardifier 只用 `minX/maxX/isInside` → 正常坐标无影响（`getXSpan` 的 [1,256] clamp 仅在跨度 >256 时有别） |
 | `NoiseChunkMixin`（Aquifer 包装） | 无异常时纯委托 → 行为保持 |
-| `SurfaceSystemProbeMixin` | 只读日志 → 无行为 |
 
-**未排除**：`FunctionContextRealPatch.noiseOnly`（坐标重写）、mod 的 `NoiseChunkRealCoordsMixin`、
-其余常驻 mod mixin（`ChunkMapEpochMixin`、`GenerationChunkHolderMixin` 等）。
+**未排除**：`FunctionContextRealPatch.noiseOnly`（坐标重写）、mod 的 `NoiseChunkRealCoordsMixin`，
+以及 B 线真实坐标化的常驻 mod mixin 组。
+注：`SurfaceSystemProbeMixin`、`ChunkMapEpochMixin`、`GenerationChunkHolderMixin` 从未注册进任何
+`farlands-*.mixins.json`，属死代码，已随清理批次删除。
 
 ---
 
