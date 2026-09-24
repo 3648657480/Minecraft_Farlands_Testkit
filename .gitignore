@@ -6,6 +6,10 @@ mod/.gradle/
 patcher-core/build/
 patcher-cli/build/
 buildSrc/build/
+tools/chunk-translator/out/
+
+# Logs (local run output / evidence dumps)
+logs/
 
 # Dev run data (worlds, logs, crash reports, tokens)
 mod/run/
