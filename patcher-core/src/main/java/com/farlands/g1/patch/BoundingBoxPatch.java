@@ -50,8 +50,8 @@ public final class BoundingBoxPatch implements ClassPatch {
         new ClassReader(original).accept(node, 0);
 
         MethodNode minX = find(node, "minX", "()I");
-        if (minX != null && containsClamp(minX)) {
-            return original; // already patched
+        if (minX != null && containsClampBound(minX)) {
+            return original; // already patched (our unique clamp lower bound is present)
         }
 
         rewrite(node, "minX", "()I", clampGetter("minX"));
@@ -89,9 +89,10 @@ public final class BoundingBoxPatch implements ClassPatch {
         return null;
     }
 
-    private static boolean containsClamp(MethodNode m) {
+    /** Idempotency marker: our unique clamp lower bound, not a generic Math.clamp. */
+    private static boolean containsClampBound(MethodNode m) {
         for (AbstractInsnNode n : m.instructions) {
-            if (n instanceof MethodInsnNode min && "java/lang/Math".equals(min.owner) && "clamp".equals(min.name)) {
+            if (n instanceof LdcInsnNode ldc && ldc.cst instanceof Long v && v == -2_117_483_648L) {
                 return true;
             }
         }

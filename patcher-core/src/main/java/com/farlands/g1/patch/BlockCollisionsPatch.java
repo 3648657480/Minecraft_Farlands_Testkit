@@ -43,10 +43,11 @@ public final class BlockCollisionsPatch implements ClassPatch {
         ClassNode node = new ClassNode();
         new ClassReader(original).accept(node, 0);
 
-        if (node.methods.stream().anyMatch(m -> "real".equals(m.name))) {
+        // Idempotency: key on our own injected call (FarProjection.collisionX),
+        // not on a helper method name that could theoretically collide.
+        if (containsCollisionCall(node)) {
             return original;
         }
-        node.methods.add(realMethod());
 
         MethodNode computeNext = null;
         for (MethodNode m : node.methods) {
@@ -174,13 +175,16 @@ public final class BlockCollisionsPatch implements ClassPatch {
         return new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection", "collisionZ", "(I)D", false);
     }
 
-    private static MethodNode realMethod() {
-        MethodNode mn = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "real", "(I)D", null, null);
-        InsnList il = mn.instructions;
-        il.add(new VarInsnNode(Opcodes.ILOAD, 0));
-        il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/farlands/g1/util/FarProjection",
-            "collisionX", "(I)D", false));
-        il.add(new InsnNode(Opcodes.DRETURN));
-        return mn;
+    private static boolean containsCollisionCall(ClassNode node) {
+        for (MethodNode m : node.methods) {
+            for (AbstractInsnNode n : m.instructions) {
+                if (n instanceof MethodInsnNode min
+                    && "com/farlands/g1/util/FarProjection".equals(min.owner)
+                    && "collisionX".equals(min.name)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

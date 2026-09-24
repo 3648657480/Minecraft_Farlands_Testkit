@@ -49,17 +49,25 @@ public final class AabbClipPatch implements ClassPatch {
             throw new IllegalStateException(TARGET + "#clip" + CLIP_DESC + " not found");
         }
 
+        // Idempotency: key on our own injected call (Vec3i.getRealX, added by
+        // Vec3iPatch). Do NOT key on move(DDD): vanilla clip already contains a
+        // move(DDD) call, so that check would falsely mark this class patched
+        // (the same class of bug as the old WgrPatch).
+        for (AbstractInsnNode n : clip.instructions) {
+            if (n instanceof MethodInsnNode min && "net/minecraft/core/Vec3i".equals(min.owner)
+                && "getRealX".equals(min.name)) {
+                return original; // already patched
+            }
+        }
+
         // Locate aabb.move(BlockPos) inside the loop.
         MethodInsnNode move = null;
         for (AbstractInsnNode n : clip.instructions) {
             if (n instanceof MethodInsnNode min && min.getOpcode() == Opcodes.INVOKEVIRTUAL
-                && TARGET.equals(min.owner) && "move".equals(min.name)) {
-                if ("(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/AABB;".equals(min.desc)) {
-                    move = min;
-                    break;
-                } else if ("(DDD)Lnet/minecraft/world/phys/AABB;".equals(min.desc)) {
-                    return original; // already patched
-                }
+                && TARGET.equals(min.owner) && "move".equals(min.name)
+                && "(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/AABB;".equals(min.desc)) {
+                move = min;
+                break;
             }
         }
         if (move == null) {
