@@ -64,14 +64,17 @@ Unzip and follow `INSTALL.md`. **You do not need to build this project.**
 
 ## Before you start (read this)
 
-1. **Version must match**: the patch targets **Minecraft 26.2 + Fabric Loader 0.19.3**; use `26.2-Fabric 0.19.3`.
-2. **You replace the version jar**: rename the patched `..._fork.jar` to the original version jar's name and
+1. **Remove / disable Fabric API** (`mods\fabric-api-*.jar`): this project is self-contained, and its mixins
+   conflict with Fabric API - keep **only** `farlands-g1-mod-*.jar` in `mods\`, otherwise the FarLands mixins may
+   not apply (e.g. no FarLands tabs on the create-world screen / no `farlands.properties`).
+2. **Version must match**: the patch targets **Minecraft 26.2 + Fabric Loader 0.19.3**; use `26.2-Fabric 0.19.3`.
+3. **You replace the version jar**: rename the patched `..._fork.jar` to the original version jar's name and
    **replace the original** (back the original up first).
-3. **Disable your launcher's "file/integrity verification"**: the jar is rewritten and no longer Mojang-signed;
+4. **Disable your launcher's "file/integrity verification"**: the jar is rewritten and no longer Mojang-signed;
    with verification on it is flagged as corrupt or auto-"repaired" (wiping the patch).
-4. **Prefer launching offline (do not sign in with a premium account)**: a modified client is incompatible with
+5. **Prefer launching offline (do not sign in with a premium account)**: a modified client is incompatible with
    the premium auth/integrity flow. (Supply your own legitimate game copy.)
-5. **Expected**: the patcher drops the 2 jar signature files, so the output has 2 fewer entries; all other entries
+6. **Expected**: the patcher drops the 2 jar signature files, so the output has 2 fewer entries; all other entries
    (lang, textures, directories) are preserved as-is.
 
 ## Install

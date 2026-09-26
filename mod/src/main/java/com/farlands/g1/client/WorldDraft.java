@@ -47,23 +47,32 @@ public final class WorldDraft {
         FarConfig.setDraft(draft);
     }
 
-    /** Writes the draft into a new world folder; no-op if the tabs were unused. */
+    /**
+     * Writes the configuration into a new world folder. Always produces
+     * {@code <world>/farlands.properties}: if the FarLands tabs were never
+     * touched ({@code draft == null}), it falls back to the global template, so
+     * every new world gets a config file by default.
+     */
     public static void writeTo(Path worldDir) {
-        if (draft == null) {
-            return;
-        }
         try {
+            Properties p = draft;
+            if (p == null) {
+                Properties t = FarConfig.globalTemplate();
+                p = t != null ? (Properties) t.clone() : new Properties();
+            }
             StringBuilder sb = new StringBuilder();
             sb.append("# FarLands G1 - world configuration (set on the create-world screen)\n");
             sb.append("# Edit this file and re-enter the world; see docs/CONFIG.md.\n");
             for (String key : KEYS) {
-                String v = draft.getProperty(key);
+                String v = p.getProperty(key);
                 if (v != null) {
                     sb.append(key).append('=').append(v).append('\n');
                 }
             }
-            Files.writeString(worldDir.resolve("farlands.properties"), sb.toString());
-            System.out.println("[FarLands-G1] wrote world config from the create-world draft");
+            Path file = worldDir.resolve("farlands.properties");
+            Files.writeString(file, sb.toString());
+            System.out.println("[FarLands-G1] wrote world config: " + file
+                + (draft == null ? " (from global template)" : " (from create-world draft)"));
         } catch (Exception e) {
             System.out.println("[FarLands-G1] draft write FAILED: " + e);
         } finally {

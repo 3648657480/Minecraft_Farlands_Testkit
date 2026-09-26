@@ -108,6 +108,26 @@ public final class FarConfig {
                 System.out.println("[FarLands-G1] config read FAILED: " + e);
             }
         }
+        // Materialize <world>/farlands.properties so it exists on disk from the
+        // first load - covers worlds created without the client mixin (e.g.
+        // dedicated servers) or any world whose file was never written.
+        if (fresh) {
+            try {
+                StringBuilder sb = new StringBuilder();
+                sb.append("# FarLands G1 - world configuration\n");
+                sb.append("# Edit this file and re-enter the world; see docs/CONFIG.md.\n");
+                for (String k : KEYS) {
+                    String v = p.getProperty(k);
+                    if (v != null) {
+                        sb.append(k).append('=').append(v).append('\n');
+                    }
+                }
+                Files.writeString(file, sb.toString());
+                System.out.println("[FarLands-G1] created world config: " + file);
+            } catch (Exception e) {
+                System.out.println("[FarLands-G1] config write FAILED: " + e);
+            }
+        }
         // migrate the legacy epoch file
         Path legacy = worldDir.resolve("farlands_epoch.txt");
         if (!p.containsKey("epoch_x") && Files.isRegularFile(legacy)) {
