@@ -12,20 +12,24 @@
 
 ### 1.1 安装
 
+先从 [Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases) 下载**最新版**的
+`patcher-cli-<版本>.jar` 与 `farlands-g1-mod-<版本>.jar`（`<版本>` = 发布页 / 仓库根 `VERSION`；
+**无需自行编译**）。
+
 执行：
 
-1. 备份原版 jar（复制为 `<版本>.jar.bak`）
-2. 打补丁：
+1. 备份原版 jar（复制为 `26.2.jar.bak`）
+2. 打补丁（用官方 26.2 客户端 jar，输出 fork jar）：
 
 ```powershell
 java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true" `
-  -jar patcher-cli-1.0.0.jar `
+  -jar patcher-cli-<版本>.jar `
   --in <官方26.2.jar> --out <fork.jar>
 ```
 
 3. 用 fork jar 替换版本目录下的同名 jar
-4. 将 `farlands-g1-mod-1.0.0.jar` 放入 `mods\`
-5. 启动
+4. 将 `farlands-g1-mod-<版本>.jar` 放入 `mods\`
+5. 启动（横幅 `[FarLands-G1] <版本> epoch build` 即成功）
 
 ### 1.2 传送
 

@@ -14,20 +14,24 @@
 
 ### 1.1 Install
 
+First download the **latest** `patcher-cli-<version>.jar` and `farlands-g1-mod-<version>.jar` from
+[Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases)
+(`<version>` = the release page / repo-root `VERSION`; **you do not need to build the project**).
+
 Execute:
 
-1. Back up the original jar (copy it to `<version>.jar.bak`)
-2. Patch:
+1. Back up the original jar (copy it to `26.2.jar.bak`)
+2. Patch (use your official 26.2 client jar, produce a fork jar):
 
 ```powershell
 java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true" `
-  -jar patcher-cli-1.0.0.jar `
+  -jar patcher-cli-<version>.jar `
   --in <official-26.2.jar> --out <fork.jar>
 ```
 
 3. Replace the same-named jar in the versions folder with the fork jar
-4. Put `farlands-g1-mod-1.0.0.jar` into `mods\`
-5. Launch
+4. Put `farlands-g1-mod-<version>.jar` into `mods\`
+5. Launch (the banner `[FarLands-G1] <version> epoch build` means success)
 
 ### 1.2 Teleport
 

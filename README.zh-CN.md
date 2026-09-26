@@ -41,21 +41,34 @@ Minecraft 26.2 边境之地工具集：在**真实坐标**下探索到 2^63（�
 - Java 25（与 Minecraft 26.2 相同）
 - 官方的 Minecraft 26.2 客户端 jar（自行获取）
 
-## 构建
+## 下载（推荐，无需编译）
+
+从 [Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases) 下载**最新版**的两个 jar：
+
+- `patcher-cli-<版本>.jar` —— 给你自己的客户端 jar 打补丁的命令行工具
+- `farlands-g1-mod-<版本>.jar` —— Fabric 模组
+
+（`<版本>` = 发布页 / 仓库根 `VERSION` 的版本号。**你不需要编译本项目。**）
+
+## 安装
+
+1. **备份**：把版本目录里的 `26.2.jar` 复制成 `26.2.jar.bak`。
+2. **打补丁**：用 `patcher-cli-<版本>.jar` 给你的官方 26.2 客户端 jar 打补丁，得到 fork jar
+   （完整命令见 [docs/USAGE.md](docs/USAGE.md) §1.1）。
+3. **替换**：用 fork jar 作为该版本的 jar。
+4. **放模组**：把 `farlands-g1-mod-<版本>.jar` 放进 `mods/`。
+5. **启动**：横幅显示 `[FarLands-G1] <版本> epoch build` 即成功。
+6. **建世界**：在 FarLands 标签页设定纪元与地形选项。
+
+完整流程见 [docs/USAGE.md](docs/USAGE.md)。
+
+## 从源码构建（仅开发者）
 
 ```
 gradlew clean build
 ```
 
-产物：`patcher-cli/build/libs/patcher-cli-<版本>.jar` 与
-`mod/build/libs/farlands-g1-mod-<版本>.jar`（`<版本>` = 仓库根 `VERSION`）。
-
-## 安装
-
-1. 用 `patcher-cli-<版本>.jar` 给你的客户端 jar 打补丁；用 fork jar 作为版本 jar（备份原版）。
-2. 把 `farlands-g1-mod-<版本>.jar` 放进 `mods/` 并启动。
-3. 创建世界时在 FarLands 标签页设定纪元与地形选项。
-   完整流程见 [docs/USAGE.md](docs/USAGE.md)。
+产物在 `patcher-cli/build/libs/` 与 `mod/build/libs/`。只有想改代码或自己编译时才需要。
 
 ## 游戏内
 

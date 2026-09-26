@@ -49,21 +49,36 @@ rewrites them in place on your machine.
 - Java 25 (the same runtime Minecraft 26.2 uses)
 - The official Minecraft 26.2 client jar, obtained by yourself
 
-## Build
+## Download (recommended - no build needed)
+
+Grab the **latest** release's two jars from
+[Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases):
+
+- `patcher-cli-<version>.jar` - the command-line patcher for your own client jar
+- `farlands-g1-mod-<version>.jar` - the Fabric mod
+
+(`<version>` = the release page / repo-root `VERSION`. **You do not need to build this project.**)
+
+## Install
+
+1. **Back up**: copy the version's `26.2.jar` to `26.2.jar.bak`.
+2. **Patch**: patch your own official 26.2 client jar with `patcher-cli-<version>.jar`
+   (full command: [docs/USAGE.en.md](docs/USAGE.en.md) §1.1).
+3. **Replace**: use the fork jar as that version's jar.
+4. **Mod**: put `farlands-g1-mod-<version>.jar` into `mods/`.
+5. **Launch**: the banner `[FarLands-G1] <version> epoch build` means success.
+6. **Create world**: set epoch/terrain on the FarLands tabs.
+
+Full walkthrough: [docs/USAGE.en.md](docs/USAGE.en.md).
+
+## Build from source (developers only)
 
 ```
 gradlew clean build
 ```
 
-Produces `patcher-cli/build/libs/patcher-cli-<version>.jar` and
-`mod/build/libs/farlands-g1-mod-<version>.jar` (`<version>` = repo-root `VERSION`).
-
-## Install
-
-1. Patch your own client jar with `patcher-cli-<version>.jar`; use the fork jar as the version jar (back up the original).
-2. Put `farlands-g1-mod-<version>.jar` into `mods/` and launch.
-3. Set epoch and terrain options on the FarLands tabs when creating a world.
-   Full walkthrough: [docs/USAGE.en.md](docs/USAGE.en.md).
+Artifacts land in `patcher-cli/build/libs/` and `mod/build/libs/`. Only needed if you
+want to change the code or compile it yourself.
 
 ## In-game
 
