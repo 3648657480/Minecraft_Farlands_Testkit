@@ -121,8 +121,11 @@ In-game `/realtp <x> 100 0` (lower render distance to 4-6 first). Seed-independe
 | 2^55 regular bands | `36028797018963968` |
 | 2^56 slabs + tiles | `72057594037927936` |
 | 2^63 uniform puzzle | `9223372036854775808` |
-| **Far Lands onset** | **`1808764368955220493860864`** (bucket k0) |
+| **Far Lands "cheese wall" (the visible one)** | **`1808764368955220359643137`** |
 | 1e306 / double limit | `1e306` |
+
+(Do NOT go to k0 `1808764368955220493860864` for the wall - it is a flat 256 plateau; the visible
+cheese wall is at `1808764368955220359643137` = k0 - (2^27-1). See `docs/EXPERIMENTS.md` §8.4.)
 
 (Only the earlier weak-layer banding ~2^60-2^75 floats with the seed - research use.)
 
