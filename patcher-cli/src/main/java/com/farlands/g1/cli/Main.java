@@ -59,10 +59,23 @@ public final class Main {
         System.out.println("Input : " + in.toAbsolutePath());
         System.out.println("Output: " + out.toAbsolutePath());
 
+        // The user-facing CLI defaults to the full patch set the mod expects
+        // (wide + continuity + epoch). Without these, only ~13 of ~38 patches
+        // apply and the fork jar would not match the mod. -Dfarlands.* overrides.
+        defaultFlag("farlands.wide");
+        defaultFlag("farlands.continuity");
+        defaultFlag("farlands.epoch");
+
         FarLandsPatcher patcher = FarLandsPatcher.createDefault();
         FarLandsPatcher.PatchReport report = patcher.patchJar(in, out);
         System.out.println(report);
         System.out.println("Done. Install the patched jar alongside the FarLands mod.");
+    }
+
+    private static void defaultFlag(String key) {
+        if (System.getProperty(key) == null) {
+            System.setProperty(key, "true");
+        }
     }
 
     private static void usage() {

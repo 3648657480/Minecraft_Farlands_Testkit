@@ -156,37 +156,63 @@ public final class FarLandsPatcher {
         int patchedClasses = 0;
         int totalClasses = 0;
 
-        try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(input));
-             ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(output))) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                if (entry.isDirectory()) {
-                    continue;
-                }
-                String name = entry.getName();
-                if (isSignatureEntry(name)) {
-                    zis.closeEntry();
-                    continue; // drop jar signature files: modified bytes would fail digest checks
-                }
-                zos.putNextEntry(new ZipEntry(name));
-                byte[] data = zis.readAllBytes();
-                if (name.endsWith(".class")) {
-                    totalClasses++;
-                    String internal = name.substring(0, name.length() - ".class".length());
-                    byte[][] outHolder = new byte[1][];
-                    String changedBy = patchClassAndDescribe(internal, data, outHolder);
-                    byte[] out = outHolder[0];
-                    if (changedBy != null) {
-                        patchedClasses++;
-                        counts.merge(changedBy, 1, Integer::sum);
+        if (input.toAbsolutePath().normalize().equals(output.toAbsolutePath().normalize())) {
+            throw new IOException("input and output must differ: " + input);
+        }
+
+        // Write to a sibling temp file, validate it, then move it into place.
+        // An interrupted run (Ctrl-C, OOM, closed window) can then never leave a
+        // half-written, unreadable jar where the launcher expects a valid one.
+        Path tmp = output.resolveSibling(output.getFileName() + ".part");
+        Files.deleteIfExists(tmp);
+        try {
+            try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(input));
+                 ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tmp))) {
+                ZipEntry entry;
+                while ((entry = zis.getNextEntry()) != null) {
+                    if (entry.isDirectory()) {
+                        continue;
                     }
-                    zos.write(out);
-                } else {
-                    zos.write(data);
+                    String name = entry.getName();
+                    if (isSignatureEntry(name)) {
+                        zis.closeEntry();
+                        continue; // drop jar signature files: modified bytes would fail digest checks
+                    }
+                    zos.putNextEntry(new ZipEntry(name));
+                    byte[] data = zis.readAllBytes();
+                    if (name.endsWith(".class")) {
+                        totalClasses++;
+                        String internal = name.substring(0, name.length() - ".class".length());
+                        byte[][] outHolder = new byte[1][];
+                        String changedBy = patchClassAndDescribe(internal, data, outHolder);
+                        byte[] out = outHolder[0];
+                        if (changedBy != null) {
+                            patchedClasses++;
+                            counts.merge(changedBy, 1, Integer::sum);
+                        }
+                        zos.write(out);
+                    } else {
+                        zos.write(data);
+                    }
+                    zos.closeEntry();
+                    zis.closeEntry();
                 }
-                zos.closeEntry();
-                zis.closeEntry();
             }
+            // Validate: the temp must be a readable zip with entries.
+            try (java.util.zip.ZipFile zf = new java.util.zip.ZipFile(tmp.toFile())) {
+                if (zf.size() == 0) {
+                    throw new IOException("patched jar has no entries");
+                }
+            }
+        } catch (IOException e) {
+            Files.deleteIfExists(tmp);
+            throw e;
+        }
+        try {
+            Files.move(tmp, output, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+        } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+            Files.move(tmp, output, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         }
         return new PatchReport(totalClasses, patchedClasses, counts);
     }
