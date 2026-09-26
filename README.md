@@ -111,7 +111,20 @@ move to `world/farlands_epochs/`, the target epoch's archive is restored if it
 exists, and the middle is simply never generated. The player lands at local
 origin of the new epoch - same real coordinates, seamless terrain.
 
-## Distance phenomena
+## Distance phenomena (just teleport there - no bisecting)
+
+In-game `/realtp <x> 100 0` (lower render distance to 4-6 first). Seed-independent, reproducible:
+
+| To see | `/realtp <x> 100 0` |
+|---|---|
+| Quantization onset 2^53 | `9007199254740992` |
+| 2^55 regular bands | `36028797018963968` |
+| 2^56 slabs + tiles | `72057594037927936` |
+| 2^63 uniform puzzle | `9223372036854775808` |
+| **Far Lands onset** | **`1808764368955220493860864`** (bucket k0) |
+| 1e306 / double limit | `1e306` |
+
+(Only the earlier weak-layer banding ~2^60-2^75 floats with the seed - research use.)
 
 Measurements, method and conditions live in
 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md). They are specific results under
