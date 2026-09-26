@@ -66,6 +66,7 @@ public final class Main {
     }
 
     private static void usage() {
+        System.out.println("FarLands Patcher v" + FarLandsPatcher.VERSION);
         System.out.println("""
             Usage: farlands-patcher --in <minecraft-client.jar> --out <patched.jar> [--verbose]
 

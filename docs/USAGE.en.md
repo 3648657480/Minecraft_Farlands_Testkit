@@ -19,16 +19,27 @@ First download the **latest** bundle `FarLands-G1-<version>.zip` from
 `patcher-cli-<version>.jar`, `farlands-g1-mod-<version>.jar` and `docs/`
 (`<version>` = the release page / repo-root `VERSION`; **you do not need to build the project**).
 
+**Prerequisite**: Java **21 or newer (25 recommended)**. If `java -version` shows `1.8`, `java -jar`
+fails with `UnsupportedClassVersionError` - use the bundled `patch.bat` (auto-picks Java 21+), or point
+at a Java 21+ `java.exe` explicitly. The input jar must be a **named (mojmap)** 26.2 version jar (e.g.
+the Fabric `...\versions\26.2-Fabric 0.19.3\26.2-Fabric 0.19.3.jar`).
+
 Execute:
 
 1. Back up the original jar (copy it to `26.2.jar.bak`)
-2. Patch (use your official 26.2 client jar, produce a fork jar):
+2. Patch - **Option A (recommended)**: drag your client jar onto **`patch.bat`** (auto-picks Java 21+,
+   writes `..._fork.jar` next to it).
+   **Option B (manual)**: `cd` into the bundle folder and use full paths:
 
 ```powershell
 java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true" `
   -jar patcher-cli-<version>.jar `
-  --in <official-26.2.jar> --out <fork.jar>
+  --in  "<full path to your 26.2 client jar>" `
+  --out "<full path to the fork jar>"
 ```
+
+   (If your default `java` is 1.8, replace `java` with a Java 21+ path such as
+   `C:\Program Files\Java\jdk-21\bin\java.exe`. The `--out` file must not already exist.)
 
 3. Replace the same-named jar in the versions folder with the fork jar
 4. Put `farlands-g1-mod-<version>.jar` into `mods\`

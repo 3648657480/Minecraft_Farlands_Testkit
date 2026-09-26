@@ -16,16 +16,27 @@
 `FarLands-G1-<版本>.zip`。**一个文件**，解压后含 `patcher-cli-<版本>.jar`、`farlands-g1-mod-<版本>.jar`
 与 `docs/`（`<版本>` = 发布页 / 仓库根 `VERSION`；**无需自行编译**）。
 
+**环境前提**：Java **21 或更新（推荐 25）**。⚠️ 若 `java -version` 显示 `1.8`，直接 `java -jar`
+会报 `UnsupportedClassVersionError`——请用分发包里的 `patch.bat`（自动挑 Java 21+），或手动换成
+Java 21+ 的完整路径。输入 jar 需为**命名（mojmap）的** 26.2 版本 jar（如 Fabric 的
+`...\versions\26.2-Fabric 0.19.3\26.2-Fabric 0.19.3.jar`）。
+
 执行：
 
 1. 备份原版 jar（复制为 `26.2.jar.bak`）
-2. 打补丁（用官方 26.2 客户端 jar，输出 fork jar）：
+2. 打补丁——**方式 A（推荐）**：把客户端 jar **拖到 `patch.bat` 上**（自动找 Java 21+、在 jar 同目录
+   生成 `..._fork.jar`）。
+   **方式 B（手动）**：先 `cd` 到分发包目录，`--in/--out` 写完整路径：
 
 ```powershell
 java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true" `
   -jar patcher-cli-<版本>.jar `
-  --in <官方26.2.jar> --out <fork.jar>
+  --in  "<你的 26.2 客户端 jar 完整路径>" `
+  --out "<输出 fork jar 完整路径>"
 ```
+
+   （若默认 `java` 是 1.8，把 `java` 换成 Java 21+ 的完整路径，如 `C:\Program Files\Java\jdk-21\bin\java.exe`。
+   `--out` 指向的文件不能已存在。）
 
 3. 用 fork jar 替换版本目录下的同名 jar
 4. 将 `farlands-g1-mod-<版本>.jar` 放入 `mods\`

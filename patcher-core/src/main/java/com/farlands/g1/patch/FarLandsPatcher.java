@@ -22,7 +22,18 @@ import java.util.zip.ZipOutputStream;
  */
 public final class FarLandsPatcher {
 
-    public static final String VERSION = "1.0.0";
+    /**
+     * Version, read from the jar manifest ({@code Implementation-Version}, set
+     * from the repo-root {@code VERSION} at build time) so it is never
+     * hardcoded here. Falls back to {@code "dev"} for exploded class dirs.
+     */
+    public static final String VERSION = resolveVersion();
+
+    private static String resolveVersion() {
+        Package pkg = FarLandsPatcher.class.getPackage();
+        String v = pkg == null ? null : pkg.getImplementationVersion();
+        return v == null || v.isBlank() ? "dev" : v;
+    }
 
     /**
      * Patch-set revision. The dev jar processor caches the patched Minecraft

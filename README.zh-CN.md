@@ -38,8 +38,10 @@ Minecraft 26.2 边境之地工具集：在**真实坐标**下探索到 2^63（�
 
 ## 环境要求
 
-- Java 25（与 Minecraft 26.2 相同）
-- 官方的 Minecraft 26.2 客户端 jar（自行获取）
+- **Java 21 或更新（推荐 25）**。⚠️ 若 `java -version` 显示 `1.8`，直接 `java -jar` 会报
+  `UnsupportedClassVersionError`——用分发包里的 `patch.bat` 会自动挑 Java 21+。
+- 你自己合法获取的 **Minecraft 26.2 客户端 jar**（需为命名/mojmap 的版本 jar，例如 Fabric 的
+  `...\versions\26.2-Fabric 0.19.3\26.2-Fabric 0.19.3.jar`）。
 
 ## 下载（推荐，一次搞定，无需编译）
 
@@ -55,8 +57,8 @@ Minecraft 26.2 边境之地工具集：在**真实坐标**下探索到 2^63（�
 ## 安装
 
 1. **备份**：把版本目录里的 `26.2.jar` 复制成 `26.2.jar.bak`。
-2. **打补丁**：用 `patcher-cli-<版本>.jar` 给你的官方 26.2 客户端 jar 打补丁，得到 fork jar
-   （完整命令见 [docs/USAGE.md](docs/USAGE.md) §1.1）。
+2. **打补丁**：运行分发包里的 **`patch.bat`**（把客户端 jar 拖上去即可；它会自动挑 Java 21+ 并处理
+   路径），或手动运行 `patcher-cli-<版本>.jar`——命令与路径注意事项见 [docs/USAGE.md](docs/USAGE.md) §1.1。
 3. **替换**：用 fork jar 作为该版本的 jar。
 4. **放模组**：把 `farlands-g1-mod-<版本>.jar` 放进 `mods/`。
 5. **启动**：横幅显示 `[FarLands-G1] <版本> epoch build` 即成功。

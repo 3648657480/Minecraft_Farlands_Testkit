@@ -46,8 +46,10 @@ rewrites them in place on your machine.
 
 ## Requirements
 
-- Java 25 (the same runtime Minecraft 26.2 uses)
-- The official Minecraft 26.2 client jar, obtained by yourself
+- **Java 21 or newer (25 recommended)**. If `java -version` shows `1.8`, `java -jar` fails with
+  `UnsupportedClassVersionError` - the bundled `patch.bat` auto-picks Java 21+.
+- Your own legitimately obtained **Minecraft 26.2 client jar** (a named/mojmap version jar, e.g. the
+  Fabric `...\versions\26.2-Fabric 0.19.3\26.2-Fabric 0.19.3.jar`).
 
 ## Download (recommended - one file, no build needed)
 
@@ -63,8 +65,9 @@ Unzip and follow `INSTALL.md`. **You do not need to build this project.**
 ## Install
 
 1. **Back up**: copy the version's `26.2.jar` to `26.2.jar.bak`.
-2. **Patch**: patch your own official 26.2 client jar with `patcher-cli-<version>.jar`
-   (full command: [docs/USAGE.en.md](docs/USAGE.en.md) §1.1).
+2. **Patch**: run the bundled **`patch.bat`** (drag your client jar onto it; it auto-picks Java 21+ and
+   handles paths), or run `patcher-cli-<version>.jar` manually - see
+   [docs/USAGE.en.md](docs/USAGE.en.md) §1.1 for the command and path notes.
 3. **Replace**: use the fork jar as that version's jar.
 4. **Mod**: put `farlands-g1-mod-<version>.jar` into `mods/`.
 5. **Launch**: the banner `[FarLands-G1] <version> epoch build` means success.
