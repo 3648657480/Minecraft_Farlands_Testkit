@@ -67,9 +67,14 @@ public final class Main {
         defaultFlag("farlands.epoch");
 
         FarLandsPatcher patcher = FarLandsPatcher.createDefault();
-        FarLandsPatcher.PatchReport report = patcher.patchJar(in, out);
-        System.out.println(report);
-        System.out.println("Done. Install the patched jar alongside the FarLands mod.");
+        try {
+            FarLandsPatcher.PatchReport report = patcher.patchJar(in, out);
+            System.out.println(report);
+            System.out.println("Done. Install the patched jar alongside the FarLands mod.");
+        } catch (java.io.IOException e) {
+            System.err.println("[!] Patch failed: " + e.getMessage());
+            System.exit(1);
+        }
     }
 
     private static void defaultFlag(String key) {

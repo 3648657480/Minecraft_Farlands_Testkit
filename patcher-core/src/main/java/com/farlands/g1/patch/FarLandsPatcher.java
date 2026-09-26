@@ -160,6 +160,17 @@ public final class FarLandsPatcher {
             throw new IOException("input and output must differ: " + input);
         }
 
+        // Pre-flight: the input must be a complete, readable zip (central
+        // directory / END record). A truncated or corrupt jar (e.g. a previous
+        // interrupted patch) would otherwise be silently re-emitted as a small,
+        // unusable jar - exactly the "produces only ~8 MB" trap.
+        try (java.util.zip.ZipFile ignored = new java.util.zip.ZipFile(input.toFile())) {
+            ignored.size();
+        } catch (IOException e) {
+            throw new IOException("Input jar is not a valid/complete zip (corrupt or truncated): "
+                + input + " - restore it from your backup and retry.", e);
+        }
+
         // Write to a sibling temp file, validate it, then move it into place.
         // An interrupted run (Ctrl-C, OOM, closed window) can then never leave a
         // half-written, unreadable jar where the launcher expects a valid one.
