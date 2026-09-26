@@ -62,6 +62,18 @@ Grab the **latest** bundle `FarLands-G1-<version>.zip` from
 
 Unzip and follow `INSTALL.md`. **You do not need to build this project.**
 
+## Before you start (read this)
+
+1. **Version must match**: the patch targets **Minecraft 26.2 + Fabric Loader 0.19.3**; use `26.2-Fabric 0.19.3`.
+2. **You replace the version jar**: rename the patched `..._fork.jar` to the original version jar's name and
+   **replace the original** (back the original up first).
+3. **Disable your launcher's "file/integrity verification"**: the jar is rewritten and no longer Mojang-signed;
+   with verification on it is flagged as corrupt or auto-"repaired" (wiping the patch).
+4. **Prefer launching offline (do not sign in with a premium account)**: a modified client is incompatible with
+   the premium auth/integrity flow. (Supply your own legitimate game copy.)
+5. **Expected**: the patcher drops the 2 jar signature files, so the output has 2 fewer entries; all other entries
+   (lang, textures, directories) are preserved as-is.
+
 ## Install
 
 1. **Back up**: copy the version's `26.2.jar` to `26.2.jar.bak`.

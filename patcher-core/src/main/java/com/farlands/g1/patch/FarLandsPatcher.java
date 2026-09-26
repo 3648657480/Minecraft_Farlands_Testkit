@@ -177,36 +177,53 @@ public final class FarLandsPatcher {
         Path tmp = output.resolveSibling(output.getFileName() + ".part");
         Files.deleteIfExists(tmp);
         try {
-            try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(input));
+            // Read via ZipFile (central directory) rather than ZipInputStream:
+            // the sequential reader can mis-handle data descriptors / skip
+            // entries, leaving the output jar missing or corrupting resources
+            // (e.g. lang files / textures). ZipFile is authoritative, and we
+            // preserve each entry's compression method and directory entries.
+            try (java.util.zip.ZipFile zf = new java.util.zip.ZipFile(input.toFile());
                  ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tmp))) {
-                ZipEntry entry;
-                while ((entry = zis.getNextEntry()) != null) {
+                java.util.Enumeration<? extends ZipEntry> en = zf.entries();
+                while (en.hasMoreElements()) {
+                    ZipEntry entry = en.nextElement();
+                    String name = entry.getName();
                     if (entry.isDirectory()) {
+                        zos.putNextEntry(new ZipEntry(name)); // keep directory entries
+                        zos.closeEntry();
                         continue;
                     }
-                    String name = entry.getName();
                     if (isSignatureEntry(name)) {
-                        zis.closeEntry();
                         continue; // drop jar signature files: modified bytes would fail digest checks
                     }
-                    zos.putNextEntry(new ZipEntry(name));
-                    byte[] data = zis.readAllBytes();
+                    byte[] data;
+                    try (java.io.InputStream is = zf.getInputStream(entry)) {
+                        data = is.readAllBytes();
+                    }
+                    byte[] out = data;
                     if (name.endsWith(".class")) {
                         totalClasses++;
                         String internal = name.substring(0, name.length() - ".class".length());
                         byte[][] outHolder = new byte[1][];
                         String changedBy = patchClassAndDescribe(internal, data, outHolder);
-                        byte[] out = outHolder[0];
+                        out = outHolder[0];
                         if (changedBy != null) {
                             patchedClasses++;
                             counts.merge(changedBy, 1, Integer::sum);
                         }
-                        zos.write(out);
-                    } else {
-                        zos.write(data);
                     }
+                    ZipEntry ne = new ZipEntry(name);
+                    ne.setMethod(entry.getMethod());
+                    if (entry.getMethod() == ZipEntry.STORED) {
+                        ne.setSize(out.length);
+                        ne.setCompressedSize(out.length);
+                        java.util.zip.CRC32 crc = new java.util.zip.CRC32();
+                        crc.update(out);
+                        ne.setCrc(crc.getValue());
+                    }
+                    zos.putNextEntry(ne);
+                    zos.write(out);
                     zos.closeEntry();
-                    zis.closeEntry();
                 }
             }
             // Validate: the temp must be a readable zip with entries.
