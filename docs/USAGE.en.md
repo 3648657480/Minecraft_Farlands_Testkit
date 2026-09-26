@@ -14,8 +14,9 @@
 
 ### 1.1 Install
 
-First download the **latest** `patcher-cli-<version>.jar` and `farlands-g1-mod-<version>.jar` from
-[Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases)
+First download the **latest** bundle `FarLands-G1-<version>.zip` from
+[Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases). **One file**; unzip to get
+`patcher-cli-<version>.jar`, `farlands-g1-mod-<version>.jar` and `docs/`
 (`<version>` = the release page / repo-root `VERSION`; **you do not need to build the project**).
 
 Execute:

@@ -12,9 +12,9 @@
 
 ### 1.1 安装
 
-先从 [Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases) 下载**最新版**的
-`patcher-cli-<版本>.jar` 与 `farlands-g1-mod-<版本>.jar`（`<版本>` = 发布页 / 仓库根 `VERSION`；
-**无需自行编译**）。
+先从 [Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases) 下载**最新版分发包**
+`FarLands-G1-<版本>.zip`。**一个文件**，解压后含 `patcher-cli-<版本>.jar`、`farlands-g1-mod-<版本>.jar`
+与 `docs/`（`<版本>` = 发布页 / 仓库根 `VERSION`；**无需自行编译**）。
 
 执行：
 

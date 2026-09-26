@@ -41,14 +41,16 @@ Minecraft 26.2 边境之地工具集：在**真实坐标**下探索到 2^63（�
 - Java 25（与 Minecraft 26.2 相同）
 - 官方的 Minecraft 26.2 客户端 jar（自行获取）
 
-## 下载（推荐，无需编译）
+## 下载（推荐，一次搞定，无需编译）
 
-从 [Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases) 下载**最新版**的两个 jar：
+从 [Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases) 下载**最新版分发包**
+`FarLands-G1-<版本>.zip`。**一个文件，解压即含**：
 
 - `patcher-cli-<版本>.jar` —— 给你自己的客户端 jar 打补丁的命令行工具
 - `farlands-g1-mod-<版本>.jar` —— Fabric 模组
+- `docs/`（玩家指南）+ `INSTALL.md`（一页安装说明）+ `README` + `LICENSE`
 
-（`<版本>` = 发布页 / 仓库根 `VERSION` 的版本号。**你不需要编译本项目。**）
+解压后照其中的 `INSTALL.md` 走即可。**你不需要编译本项目。**
 
 ## 安装
 

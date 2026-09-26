@@ -49,15 +49,16 @@ rewrites them in place on your machine.
 - Java 25 (the same runtime Minecraft 26.2 uses)
 - The official Minecraft 26.2 client jar, obtained by yourself
 
-## Download (recommended - no build needed)
+## Download (recommended - one file, no build needed)
 
-Grab the **latest** release's two jars from
-[Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases):
+Grab the **latest** bundle `FarLands-G1-<version>.zip` from
+[Releases](https://github.com/3648657480/Minecraft_Farlands_Testkit/releases). **One download, it contains**:
 
 - `patcher-cli-<version>.jar` - the command-line patcher for your own client jar
 - `farlands-g1-mod-<version>.jar` - the Fabric mod
+- `docs/` (player guides) + `INSTALL.md` (one-page install) + `README` + `LICENSE`
 
-(`<version>` = the release page / repo-root `VERSION`. **You do not need to build this project.**)
+Unzip and follow `INSTALL.md`. **You do not need to build this project.**
 
 ## Install
 
