@@ -1,6 +1,6 @@
 ﻿# FarLands G1 — Changelog
 
-> Version 1.0.0 (authority: repo-root VERSION)
+> Current version: see repo-root `VERSION` (the single authority).
 
 ## 1.0.1
 

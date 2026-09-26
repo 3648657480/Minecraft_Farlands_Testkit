@@ -1,10 +1,13 @@
 ﻿# FarLands G1
 
 > [中文说明](README.zh-CN.md) | **English**
-> Version 1.0.1 (authority: repo-root VERSION)
+> Version: see repo-root `VERSION` (the single authority)
 
-> **1.0.0 has a fatal far-domain crash - upgrade to 1.0.1** (see
+> **1.0.0 has a fatal far-domain crash - upgrade to the latest version** (see
 > [CHANGELOG.md](CHANGELOG.md)). If your startup banner shows `1.0.0`, update.
+
+> **Status**: G1 is **paused as a "playable / studyable" release** - the
+> epoch / local-domain route has reached its design boundary.
 
 Minecraft 26.2 Far Lands toolset: real-coordinate exploration up to 2^63
 (eventually 1e306) - no scaling, no fake coordinates, real terrain.
@@ -52,13 +55,13 @@ rewrites them in place on your machine.
 gradlew clean build
 ```
 
-Produces `patcher-cli/build/libs/patcher-cli-1.0.0.jar` and
-`mod/build/libs/farlands-g1-mod-1.0.0.jar`.
+Produces `patcher-cli/build/libs/patcher-cli-<version>.jar` and
+`mod/build/libs/farlands-g1-mod-<version>.jar` (`<version>` = repo-root `VERSION`).
 
 ## Install
 
-1. Patch your own client jar with `patcher-cli-1.0.0.jar`; use the fork jar as the version jar (back up the original).
-2. Put `farlands-g1-mod-1.0.0.jar` into `mods/` and launch.
+1. Patch your own client jar with `patcher-cli-<version>.jar`; use the fork jar as the version jar (back up the original).
+2. Put `farlands-g1-mod-<version>.jar` into `mods/` and launch.
 3. Set epoch and terrain options on the FarLands tabs when creating a world.
    Full walkthrough: [docs/USAGE.en.md](docs/USAGE.en.md).
 

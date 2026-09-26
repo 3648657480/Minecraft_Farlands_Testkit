@@ -1,10 +1,12 @@
 ﻿# FarLands G1
 
 > **中文** | [English](README.md)
-> 版本 1.0.1（权威：仓库根目录 VERSION）
+> 版本：见仓库根目录 `VERSION`（唯一权威）
 
-> **1.0.0 有致命远域崩溃，请升级到 1.0.1**（见 [CHANGELOG.md](CHANGELOG.md)）。
+> **1.0.0 有致命远域崩溃，请升级到最新版**（见 [CHANGELOG.md](CHANGELOG.md)）。
 > 启动横幅显示 `1.0.0` 的话就更新。
+
+> **状态**：G1 作为「可玩 / 可研究」版本**暂结项**（epoch / local 域路线已到其设计边界）。
 
 Minecraft 26.2 边境之地工具集：在**真实坐标**下探索到 2^63（终局 1e306）——
 不缩放、不假坐标、地形真实。
@@ -45,13 +47,13 @@ Minecraft 26.2 边境之地工具集：在**真实坐标**下探索到 2^63（�
 gradlew clean build
 ```
 
-产物：`patcher-cli/build/libs/patcher-cli-1.0.0.jar` 与
-`mod/build/libs/farlands-g1-mod-1.0.0.jar`。
+产物：`patcher-cli/build/libs/patcher-cli-<版本>.jar` 与
+`mod/build/libs/farlands-g1-mod-<版本>.jar`（`<版本>` = 仓库根 `VERSION`）。
 
 ## 安装
 
-1. 用 `patcher-cli-1.0.0.jar` 给你的客户端 jar 打补丁；用 fork jar 作为版本 jar（备份原版）。
-2. 把 `farlands-g1-mod-1.0.0.jar` 放进 `mods/` 并启动。
+1. 用 `patcher-cli-<版本>.jar` 给你的客户端 jar 打补丁；用 fork jar 作为版本 jar（备份原版）。
+2. 把 `farlands-g1-mod-<版本>.jar` 放进 `mods/` 并启动。
 3. 创建世界时在 FarLands 标签页设定纪元与地形选项。
    完整流程见 [docs/USAGE.md](docs/USAGE.md)。
 
