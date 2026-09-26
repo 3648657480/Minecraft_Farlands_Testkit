@@ -1,6 +1,6 @@
 ﻿# FarLands G1 Configuration Guide
 
-> Version 1.0.0 (authority: repo-root VERSION)
+> Version: see repo-root `VERSION` (the single authority)
 > Style: Strict Respect Style. The single configuration reference: global
 > template, create-world tabs, world file, and per-key details.
 > Every consequence carries a verification status. Unverified items are
