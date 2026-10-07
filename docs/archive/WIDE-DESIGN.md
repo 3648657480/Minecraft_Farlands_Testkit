@@ -30,6 +30,10 @@
 
 ## 存储 key 128bit（阶段 3 前置）
 
+> **状态与外部反馈（2026-10）**：本节为**未来工作草案**，尚未实现。社区（`__Infinitive__` /
+> `MF5 MysteriousFrameSlot`）指出：**fastutil 无 `Long128` 类型，自建 128 位 key 有显著性能风险**
+> ——若走路线 A，实施前须做性能评估（与 JDK 原生类型基准对比）。
+
 实际结构（已确认）：
 - 光照：`DataLayerStorageMap.map: Long2ObjectOpenHashMap<DataLayer>`，key = SectionPos.asLong（27bit 重打包后 2^30 块）
 - 区块：`ChunkMap.updatingChunkMap/visibleChunkMap/pendingUnloads: Long2ObjectLinkedOpenHashMap<ChunkHolder>`，key = ChunkPos.pack（32+32 = 2^31 区块）；`chunkTypeCache: Long2ByteMap`、`nextChunkSaveTime: Long2LongMap`
