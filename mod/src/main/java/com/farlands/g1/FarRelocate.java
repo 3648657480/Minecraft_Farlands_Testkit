@@ -45,6 +45,14 @@ public final class FarRelocate {
     /** Written on the server thread (tickServer), consumed on the client thread (runTick). */
     public static volatile Request pending;
 
+    /**
+     * Exact local arrival position after a /realtp relocation (real target
+     * minus the NEW epoch). Consumed by PlayerListMixin on the next join so
+     * the first /realtp lands on the exact requested point; null = fall back
+     * to the local-spawn reset.
+     */
+    public static volatile double[] pendingLocalTarget;
+
     private FarRelocate() {
     }
 }

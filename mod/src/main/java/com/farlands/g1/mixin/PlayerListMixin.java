@@ -29,6 +29,15 @@ public class PlayerListMixin {
         if (!FarProjection.isEpochActive()) {
             return;
         }
+        double[] exact = com.farlands.g1.FarRelocate.pendingLocalTarget;
+        if (exact != null) {
+            com.farlands.g1.FarRelocate.pendingLocalTarget = null;
+            player.teleportTo(exact[0], exact[1], exact[2]);
+            System.out.println("[FarLands] player placed at exact relocation target ("
+                + exact[0] + "," + exact[1] + "," + exact[2] + ")");
+            System.out.flush();
+            return;
+        }
         LevelData.RespawnData rd = player.level().getServer()
             .getWorldData().overworldData().getRespawnData();
         BlockPos pos = rd.pos();

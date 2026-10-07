@@ -94,6 +94,14 @@ public class RealTpCommandMixin {
             BigInteger shiftChunks = epochX.subtract(newEpochX).divide(BigInteger.valueOf(16));
             com.farlands.g1.FarRelocate.pending = new com.farlands.g1.FarRelocate.Request(
                 0, 0, newEpochX, newEpochZ, true);
+            // Exact arrival: the reload normally places the player at the
+            // epoch's local spawn (target floored to the epoch grid) - keep the
+            // residual so the join lands on the exact requested point. Without
+            // this, the first /realtp is off and only a second (now in-window)
+            // call snaps to the exact spot.
+            com.farlands.g1.FarRelocate.pendingLocalTarget = new double[]{
+                realX.subtract(newEpochX).doubleValue(), (double) realY,
+                realZ.subtract(newEpochZ).doubleValue()};
             source.sendSuccess(() -> Component.literal(
                 "目标超出当前窗口，正在重定位世界（新 epoch 约 " + abbreviate(newEpochX) + "，平移 "
                 + abbreviate(shiftChunks) + " chunks）..."), false);

@@ -2,6 +2,24 @@
 
 > Current version: see repo-root `VERSION` (the single authority).
 
+## 1.0.2
+
+### Fixed
+
+- **First `/realtp` after a relocation could land off-target**: the reload placed
+  the player at the epoch's local spawn (the target floored to the epoch grid and
+  Y forced to the spawn height), so the first out-of-window `/realtp` was off by
+  up to 16 blocks; only a second (now in-window) call snapped to the exact spot.
+  The relocation request now carries the exact residual position and the join
+  lands on the requested point.
+
+### Docs / licensing
+
+- `LICENSE.txt`: the copyright holder is now filled in (was blank).
+- `docs/archive/WIDE-DESIGN.md`: the "128-bit storage key" section is explicitly
+  marked as an unimplemented draft; external performance feedback (no `Long128`
+  in fastutil) recorded.
+
 ## 1.0.1
 
 > **FATAL - upgrade required.** `1.0.0` contains a far-domain crash

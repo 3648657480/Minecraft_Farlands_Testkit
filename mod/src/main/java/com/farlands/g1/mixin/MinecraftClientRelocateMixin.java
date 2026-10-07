@@ -70,6 +70,7 @@ public class MinecraftClientRelocateMixin {
             }
             mc.createWorldOpenFlows().openWorld(levelId, () -> {});
         } catch (Throwable t) {
+            com.farlands.g1.FarRelocate.pendingLocalTarget = null;
             System.out.println("[FarLands] relocate FAILED: " + t);
             t.printStackTrace(System.out);
             System.out.flush();
