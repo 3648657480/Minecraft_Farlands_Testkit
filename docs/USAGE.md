@@ -87,14 +87,14 @@ java "-Dfarlands.wide=true" "-Dfarlands.continuity=true" "-Dfarlands.epoch=true"
 | 参数 | 含义 | 可调范围 | 错误后果 | 为什么这样限制 |
 |---|---|---|---|---|
 | `epoch_x` / `epoch_z` | 世界原点（真实坐标） | 任意整数 | **已生成区块全部错位**（见红线 R1） | 无限制——但后果不可逆，系统无法检测 |
-| `auto_relocate` | 走路到窗口边缘自动重定位 | `true` / `false` | 非布尔值 → **JVM 中断** | 语义必须明确，静默降级会隐藏意图 |
-| `relocate_margin` | 触发距离（格） | ≥ 0 | 负数 → **JVM 中断**；过大 → 重定位过晚（仍可用） | 负数无意义；过小会频繁重定位 |
-| `fluid_tick_limit` | 每游戏 tick 流体 tick 上限 | ≥ 0（0 = 无限） | 负数 → **JVM 中断**；过大 → 异常地形下 CPU 持续满载（见红线 R4） | 0 是合法语义（关闭限流），负数是错误 |
-| `archive_dir` | 纪元归档目录名 | 纯目录名 | 空/含 `/`、`\`、`..` → **JVM 中断** | 路径穿越会写到世界外 |
-| `worldgen_sample_mode` | 远处采样策略 | `raw` / `clamp` / `quantize` | 非法值 → **JVM 中断**；`clamp`/`quantize` 改变地形（见红线 R5） | 模式必须明确，拼写错误不能静默变 raw |
-| `worldgen_sample_clamp` | clamp 模式边界 | 正有限数 | 非正/非有限 → **JVM 中断**；过小 → 地形强重复 | 0 或 NaN 会使采样无意义 |
-| `worldgen_far_threshold` | 策略生效距离（格） | ≥ 0（0 = 全域） | 负数 → **JVM 中断**；0 → 全域地形被策略改写（见红线 R5） | 负数无意义 |
-| `debug` | 日志级别 | `0`-`3` | 超范围 → **JVM 中断**；`3` → 巨量日志（见红线 R3） | 4 档固定语义，越界是错误 |
+| `auto_relocate` | 走路到窗口边缘自动重定位 | `true` / `false` | 非布尔值 → **世界加载中止** | 语义必须明确，静默降级会隐藏意图 |
+| `relocate_margin` | 触发距离（格） | ≥ 0 | 负数 → **世界加载中止**；过大 → 重定位过晚（仍可用） | 负数无意义；过小会频繁重定位 |
+| `fluid_tick_limit` | 每游戏 tick 流体 tick 上限 | ≥ 0（0 = 无限） | 负数 → **世界加载中止**；过大 → 异常地形下 CPU 持续满载（见红线 R4） | 0 是合法语义（关闭限流），负数是错误 |
+| `archive_dir` | 纪元归档目录名 | 纯目录名 | 空/含 `/`、`\`、`..` → **世界加载中止** | 路径穿越会写到世界外 |
+| `worldgen_sample_mode` | 远处采样策略 | `raw` / `clamp` / `quantize` | 非法值 → **世界加载中止**；`clamp`/`quantize` 改变地形（见红线 R5） | 模式必须明确，拼写错误不能静默变 raw |
+| `worldgen_sample_clamp` | clamp 模式边界 | 正有限数 | 非正/非有限 → **世界加载中止**；过小 → 地形强重复 | 0 或 NaN 会使采样无意义 |
+| `worldgen_far_threshold` | 策略生效距离（格） | ≥ 0（0 = 全域） | 负数 → **世界加载中止**；0 → 全域地形被策略改写（见红线 R5） | 负数无意义 |
+| `debug` | 日志级别 | `0`-`3` | 超范围 → **世界加载中止**；`3` → 巨量日志（见红线 R3） | 4 档固定语义，越界是错误 |
 
 JVM 参数覆盖：`-Dfarlands.<键>=<值>`。优先级 JVM > 世界文件 > 全局模板；JVM 不落盘。
 详见 [配置指南](CONFIG.md) §0/§3。
@@ -119,9 +119,10 @@ JVM 参数覆盖：`-Dfarlands.<键>=<值>`。优先级 JVM > 世界文件 > 全
 
 原因：错误的 epoch 或 margin 会损毁世界；静默降级会把错误藏起来。
 
-验证：已测试（`debug=5` → `POLICY VIOLATION` + JVM 中断）。
+验证：已测试（`debug=5` → `POLICY VIOLATION` + 世界加载中止）。
 
-处置：`POLICY VIOLATION` → `Runtime.halt(1)`。**系统不会让你带着错误配置继续跑。**
+处置：`POLICY VIOLATION` → 抛 `FarConfig.ConfigException`，世界加载中止并走正常崩溃报告/
+关停流程（shutdown hooks 正常执行）。**系统不会让你带着错误配置继续跑。**
 
 ### R3：`debug=3` 长期开启
 
@@ -192,7 +193,7 @@ R7（后果描述写实）、R8（严谨严格）、R9（地形生成器深层�
 |---|---|---|
 | 2^31 边界地形连贯、AABB 可用 | 已测试 | 2026-09，客户端 2147481648 内外实测 |
 | 跨世界 epoch 残留（新世界继承旧 epoch） | 已测试 | 2026-09，新建世界复现 + 修复后验证 |
-| `debug=5` → JVM 中断 | 已测试 | rig，`POLICY VIOLATION` + halt 确认 |
+| `debug=5` → 世界加载中止 | 已测试 | rig，`POLICY VIOLATION` + ConfigException 确认 |
 | `worldgen` 三模式 1e306 生成 | 已测试 | rig，seed 12345，raw/clamp/quantize 均 gen OK |
 | 32 视距现象区 → 3fps + 虚拟内存告急 | 已测试 | 2026-09 压力测试（AppHangB1） |
 | 流体无限流 → CPU 持续满载 | 已测试 | Watchdog 堆栈（`getSlopeDistance` 递归链） |

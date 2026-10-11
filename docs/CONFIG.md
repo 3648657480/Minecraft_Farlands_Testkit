@@ -52,7 +52,8 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 |---|---|
 | 文件不存在 | 世界加载时从全局模板播种（epoch = 原点） |
 | 文件存在但缺键 | 缺失键取默认值；epoch 缺失视为原点 |
-| 文件存在且格式错误 | **`POLICY VIOLATION` → JVM 中断**（见 R2） |
+| 文件存在但读取失败 | **`POLICY VIOLATION` → 世界加载中止**（拒绝用默认 (0,0) 继续）|
+| 文件存在且格式错误 | **`POLICY VIOLATION` → 世界加载中止**（见 R2） |
 
 ### 0.4 生效时机
 
@@ -69,7 +70,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 
 **执行**：编辑前复制一份 `farlands.properties.bak`。
 
-原因：格式错误会导致 JVM 拒绝启动；有备份可立即回退。
+原因：格式错误会让世界加载被拒绝（抛 `ConfigException`）；有备份可立即回退。
 
 ---
 
@@ -112,7 +113,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 - `true`（默认）：一路走，接近 `epoch ± (2^31 − relocate_margin)` 时自动重定位，无缝继续。
 - `false`：只提示"接近窗口边缘，请用 /realtp 继续"。适合想完全手动控制的玩家。
 
-**错误后果**：非布尔值（如 `yes`、`1`）→ **`POLICY VIOLATION` → JVM 中断**。
+**错误后果**：非布尔值（如 `yes`、`1`）→ **`POLICY VIOLATION` → 世界加载中止**。
 
 **为什么严格**：静默降级会把"我明明写了 true"变成"实际 false"，意图被隐藏。见 R2。
 
@@ -135,7 +136,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 - 调大（如 `1000000000`）：边缘更不可见（"边缘永在视野外"思想），代价是重定位更频繁。
 - 调小（如 `5000`）：重定位更晚，风险是接近 int 溢出区（**不推荐低于 10000**）。
 
-**错误后果**：负数 → **`POLICY VIOLATION` → JVM 中断**。过大 → 走路时频繁重定位（可用但烦）。
+**错误后果**：负数 → **`POLICY VIOLATION` → 世界加载中止**。过大 → 走路时频繁重定位（可用但烦）。
 
 **为什么下限 0**：0 表示"贴边才触发"，语义合法但危险；负数是错误。
 
@@ -158,7 +159,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 - 调大（如 `10000`）：流体流动更快，风险是异常地形下 CPU 压力（见 R4）。
 - `0`：关闭限流。**仅在正常地形使用**；异常地形 + 0 = R4 红线。
 
-**错误后果**：负数 → **`POLICY VIOLATION` → JVM 中断**；`0` + 异常地形 → 服务器线程持续满载、AppHang（已测试）。
+**错误后果**：负数 → **`POLICY VIOLATION` → 世界加载中止**；`0` + 异常地形 → 服务器线程持续满载、AppHang（已测试）。
 
 **为什么**：每个流体方块触发递归坡度搜索（深度 4-8 层 × 3 方向）。水柱世界的水方块数以百万计，不限流 = CPU 持续满载。
 
@@ -180,7 +181,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 - 默认即可。归档结构：`<archive_dir>\e_<前12位>L<位数>_<同Z>\`（每个访问过的纪元一个子目录）。
 - 想换位置（如放独立磁盘）：**不支持**（必须相对世界目录）。可改用符号链接。
 
-**错误后果**：空 / 含 `/`、`\`、`..` → **`POLICY VIOLATION` → JVM 中断**。
+**错误后果**：空 / 含 `/`、`\`、`..` → **`POLICY VIOLATION` → 世界加载中止**。
 
 **为什么**：路径穿越会写到世界目录之外，可能覆盖系统文件。
 
@@ -205,7 +206,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 | `clamp` | 采样坐标限制在 ±`worldgen_sample_clamp`。有限值，地形变成重复图案 | 想避免 Infinity（>1.8e308）的重复地形实验 |
 | `quantize` | 采样坐标量化到 2^53 网格。地形非常平坦/稳定 | 平坦世界实验 |
 
-**错误后果**：非法值（拼写错误）→ **`POLICY VIOLATION` → JVM 中断**。`clamp`/`quantize` 改变地形 → 新旧地形不连续（R5）。
+**错误后果**：非法值（拼写错误）→ **`POLICY VIOLATION` → 世界加载中止**。`clamp`/`quantize` 改变地形 → 新旧地形不连续（R5）。
 
 **为什么严格**：拼写错误（`Raw`、`raw `）不能静默变成 raw——你会以为策略生效了。
 
@@ -228,7 +229,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 - 调小（如 `1e10`）：地形重复更强（采样点更密集）。
 - 调大（如 `1e307`）：接近 double 极限，仍可能塌缩。
 
-**错误后果**：非正数或 NaN/Infinity → **`POLICY VIOLATION` → JVM 中断**。
+**错误后果**：非正数或 NaN/Infinity → **`POLICY VIOLATION` → 世界加载中止**。
 
 **为什么**：0 或 NaN 会使采样无意义（所有坐标映射到同一点）。
 
@@ -251,7 +252,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 - 调大：策略生效更晚（如 `1e18`）。
 - `0`：全域应用策略——**实验专用**，会使正常区域地形也被改写（R5）。
 
-**错误后果**：负数 → **`POLICY VIOLATION` → JVM 中断**。`0` → 全域地形改写（未验证，按红线对待）。
+**错误后果**：负数 → **`POLICY VIOLATION` → 世界加载中止**。`0` → 全域地形改写（未验证，按红线对待）。
 
 **为什么**：距离阈值必须非负；0 有明确语义（全域）但危险。
 
@@ -266,7 +267,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 | 含义 | 日志级别（功能性：控制运行期日志输出） |
 | 类型 | `0` / `1` / `2` / `3` |
 | 默认 | `0` |
-| 验证 | 超范围 → halt：**已测试**；>0 各级日志：**已实现**（3 档日志量按红线对待） |
+| 验证 | 超范围 → ConfigException：**已测试**；>0 各级日志：**已实现**（3 档日志量按红线对待） |
 
 **怎么用**：
 
@@ -279,7 +280,7 @@ JVM 覆盖   -Dfarlands.<key>=<value>             进程启动时
 
 各级为**累加**：`debug=2` 同时输出 `≥1` 与 `≥2` 的内容；`debug=3` 再叠加逐采样日志。
 
-**错误后果**：超出 0-3 → **`POLICY VIOLATION` → JVM 中断**。`3` 的逐采样日志已硬限流到 2000 行（`FarProjection`），长期开启不再刷爆日志。
+**错误后果**：超出 0-3 → **`POLICY VIOLATION` → 世界加载中止**。`3` 的逐采样日志已硬限流到 2000 行（`FarProjection`），长期开启不再刷爆日志。
 
 **为什么 4 档**：0/1/2/3 语义固定，越界是错误（不是"自动 clamp 到 3"）。
 
@@ -391,7 +392,7 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <游戏启动器>
 - 键名：`-Dfarlands.<配置键>=<值>`（与文件键一一对应）。
 - 优先级：JVM 覆盖世界文件，世界文件覆盖全局模板（JVM 不落盘）。
 - 用途：临时测试，不想改文件。
-- **警告**：JVM 参数同样经过 policy 检查；非法值一样 halt。
+- **警告**：JVM 参数同样经过 policy 检查；非法值一样抛异常中止加载。
 
 ---
 
@@ -401,12 +402,15 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <游戏启动器>
 |---|---|
 | 全局模板缺失 | 模组初始化时自动创建 |
 | 世界文件不存在 | 世界加载时从全局模板播种（epoch = 原点） |
+| 世界文件存在但无法读取 | `POLICY VIOLATION` → **世界加载中止**（不回落默认值）|
+| 旧版 `farlands_epoch.txt` 存在但无法解析 | `POLICY VIOLATION` → **世界加载中止** |
 | 缺键 | 取默认值 |
-| 格式错误（非数字/非布尔） | `POLICY VIOLATION` → **JVM 中断** |
-| 值越界（debug=5、负数等） | `POLICY VIOLATION` → **JVM 中断** |
+| 格式错误（非数字/非布尔） | `POLICY VIOLATION` → **世界加载中止**（抛 `ConfigException`）|
+| 值越界（debug=5、负数等） | `POLICY VIOLATION` → **世界加载中止**（抛 `ConfigException`）|
 | `epoch` 语义错误（手改） | 系统无法检测 → 区块错位（R1） |
 
 **执行**：看到 `POLICY VIOLATION` 后，检查日志里的具体消息（含错误键与值），修正后重启。
+中止走正常崩溃报告/关停流程（shutdown hooks 会执行），不会强杀进程。
 
 ---
 
@@ -452,7 +456,7 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <游戏启动器>
 
 **为什么默认必须 no-op**：它们会影响**所有**地形（含出生区）。任何非默认值都会让新生成地形与旧地形不连续——**不要**在正常存档里使用。
 
-**错误后果**：非有限数 / scale ≤ 0 → `POLICY VIOLATION` → JVM 中断。
+**错误后果**：非有限数 / scale ≤ 0 → `POLICY VIOLATION` → 世界加载中止。
 
 ---
 
@@ -477,7 +481,7 @@ java -Dfarlands.debug=1 -Dfarlands.relocate_margin=500000 -jar <游戏启动器>
 - 崩溃复现：`testspawn=true` 无头跑出生点搜索；日志出现堆栈即复现。
 - 这些键同样可作为 JVM `-D` 标志：`-Dfarlands.testgen=…`（JVM 覆盖文件，见 §3）。
 
-**错误后果**：`testgen_settle` 为负 → **`POLICY VIOLATION` → JVM 中断**。
+**错误后果**：`testgen_settle` 为负 → **`POLICY VIOLATION` → 世界加载中止**。
 但 `testgen` / `spawnset` 的**格式**目前**不做校验**：`testgen` 坏格式会在 testgen 阶段抛异常并打印
 `gen FAILED`（不中断 JVM）；`spawnset` 少于 3 段则**静默忽略**（不中断）。
 

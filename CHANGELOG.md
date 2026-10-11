@@ -2,6 +2,28 @@
 
 > Current version: see repo-root `VERSION` (the single authority).
 
+## 1.0.3
+
+### Fixed
+
+- **Invalid configuration no longer hard-kills the JVM.** `FarConfig` policy
+  violations (`POLICY VIOLATION`) used to call `Runtime.halt(1)`, which skips
+  the JVM shutdown sequence (shutdown hooks never run). They now throw
+  `FarConfig.ConfigException`, which propagates through the world-load path
+  into a normal crash report and the orderly shutdown sequence: the world load
+  still aborts, but there is no JVM-level kill.
+- **A world `farlands.properties` that exists but cannot be read now aborts
+  the load** instead of falling back to defaults - a silent fallback could
+  place the epoch at (0,0) and corrupt an existing world.
+- **A legacy `farlands_epoch.txt` that exists but cannot be parsed now aborts
+  the load** instead of being silently ignored.
+
+### Docs
+
+- `AGENTS.md`, `docs/USAGE.md/.en.md`, `docs/CONFIG.md/.en.md`: policy
+  violation semantics updated (`Runtime.halt(1)` -> `ConfigException` +
+  world-load abort); error tables now cover "file present but unreadable".
+
 ## 1.0.2
 
 ### Fixed

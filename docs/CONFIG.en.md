@@ -59,7 +59,8 @@ File: `<world folder>\farlands.properties`. This is the world's configuration.
 |---|---|
 | File missing | Seeded from the global template at world load (epoch = origin) |
 | File present, keys missing | Missing keys take defaults; missing epoch = origin |
-| File present, malformed | **`POLICY VIOLATION` -> JVM aborted** (see R2) |
+| File present, unreadable | **`POLICY VIOLATION` -> world load aborted** (never falls back to (0,0)) |
+| File present, malformed | **`POLICY VIOLATION` -> world load aborted** (see R2) |
 
 ### 0.4 When changes apply
 
@@ -127,7 +128,7 @@ new origin).
   manual control.
 
 **Wrong-value consequence**: non-boolean (`yes`, `1`) -> **`POLICY VIOLATION`
--> JVM aborted**.
+-> world load aborted**.
 
 **Why strict**: a silent fallback would turn "I wrote true" into "actually
 false"; intent gets hidden. See R2.
@@ -154,7 +155,7 @@ false"; intent gets hidden. See R2.
 - Smaller (`5000`): relocation happens later; risk of approaching the int
   overflow zone (**below 10000 not recommended**).
 
-**Wrong-value consequence**: negative -> **`POLICY VIOLATION` -> JVM aborted**.
+**Wrong-value consequence**: negative -> **`POLICY VIOLATION` -> world load aborted**.
 Too large -> frequent relocations while walking (usable but annoying).
 
 **Why 0 is allowed**: 0 means "only at the very edge" - valid semantics but
@@ -182,7 +183,7 @@ risky; negative is an error.
 - `0`: disable the limit. **Normal terrain only**; anomalous terrain + 0 = red
   line R4.
 
-**Wrong-value consequence**: negative -> **`POLICY VIOLATION` -> JVM aborted**;
+**Wrong-value consequence**: negative -> **`POLICY VIOLATION` -> world load aborted**;
 `0` + anomalous terrain -> the server thread stays saturated, AppHang (tested).
 
 **Why**: every fluid block runs a recursive slope search (4-8 levels x 3
@@ -210,7 +211,7 @@ CPU saturation.
   to the world). Use a symlink instead.
 
 **Wrong-value consequence**: empty / contains `/`, `\`, `..` -> **`POLICY
-VIOLATION` -> JVM aborted**.
+VIOLATION` -> world load aborted**.
 
 **Why**: path traversal writes outside the world and can overwrite system files.
 
@@ -236,7 +237,7 @@ VIOLATION` -> JVM aborted**.
 | `quantize` | Snap sample coordinates to the 2^53 grid; very flat/stable | Flat-world experiments |
 
 **Wrong-value consequence**: invalid value (typo) -> **`POLICY VIOLATION` ->
-JVM aborted**. `clamp`/`quantize` change terrain -> discontinuity (R5).
+world load aborted**. `clamp`/`quantize` change terrain -> discontinuity (R5).
 
 **Why strict**: a typo (`Raw`, `raw `) must not silently mean raw - you would
 think your policy is active when it is not.
@@ -261,7 +262,7 @@ think your policy is active when it is not.
 - Larger (`1e307`): close to double's limit; collapse may still occur.
 
 **Wrong-value consequence**: non-positive or NaN/Infinity -> **`POLICY
-VIOLATION` -> JVM aborted**.
+VIOLATION` -> world load aborted**.
 
 **Why**: 0 or NaN makes sampling meaningless (all coordinates map to one point).
 
@@ -286,7 +287,7 @@ VIOLATION` -> JVM aborted**.
 - `0`: apply everywhere - **experiments only**; rewrites normal-area terrain
   (R5).
 
-**Wrong-value consequence**: negative -> **`POLICY VIOLATION` -> JVM aborted**.
+**Wrong-value consequence**: negative -> **`POLICY VIOLATION` -> world load aborted**.
 `0` -> terrain rewritten everywhere (unverified; treated as a red line).
 
 **Why**: the threshold must be non-negative; 0 has clear semantics but is
@@ -303,7 +304,7 @@ dangerous.
 | Meaning | Log level (functional: controls runtime log output) |
 | Type | `0` / `1` / `2` / `3` |
 | Default | `0` |
-| Verification | Out of range -> halt: **tested**; levels >0: **implemented** (level-3 volume treated as a red line) |
+| Verification | Out of range -> ConfigException: **tested**; levels >0: **implemented** (level-3 volume treated as a red line) |
 
 **How to use**:
 
@@ -439,7 +440,7 @@ Rules:
   (JVM flags are not persisted).
 - Use for: temporary tests without editing the file.
 - **Warning**: JVM flags go through the same policy checks; invalid values
-  halt the same way.
+  abort the world load the same way.
 
 ---
 
@@ -449,13 +450,17 @@ Rules:
 |---|---|
 | Global template missing | Auto-created at mod init |
 | World file missing | Seeded from the global template at world load (epoch = origin) |
+| World file present but unreadable | `POLICY VIOLATION` -> **world load aborted** (no default fallback) |
+| Legacy `farlands_epoch.txt` present but unparseable | `POLICY VIOLATION` -> **world load aborted** |
 | Missing keys | Defaults |
-| Malformed (non-number/non-boolean) | `POLICY VIOLATION` -> **JVM aborted** |
-| Out-of-range (debug=5, negatives) | `POLICY VIOLATION` -> **JVM aborted** |
+| Malformed (non-number/non-boolean) | `POLICY VIOLATION` -> **world load aborted** (`ConfigException`) |
+| Out-of-range (debug=5, negatives) | `POLICY VIOLATION` -> **world load aborted** (`ConfigException`) |
 | Semantic error (`epoch` hand-edit) | undetectable -> chunk desync (R1) |
 
 **Execute**: after `POLICY VIOLATION`, read the specific message in the log
-(it names the offending key and value), fix, restart.
+(it names the offending key and value), fix, restart. The abort goes through
+the normal crash report / shutdown sequence (hooks run) - the process is
+never hard-killed.
 
 ---
 
@@ -506,7 +511,7 @@ spawn area). Any non-default value makes newly generated terrain discontinuous
 with old terrain - **do not** use them in normal saves.
 
 **Wrong-value consequence**: non-finite / scale <= 0 -> `POLICY VIOLATION` ->
-JVM aborted.
+world load aborted.
 
 ---
 

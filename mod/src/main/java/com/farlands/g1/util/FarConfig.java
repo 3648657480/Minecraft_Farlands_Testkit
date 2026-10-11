@@ -105,7 +105,10 @@ public final class FarConfig {
             try (var in = Files.newInputStream(file)) {
                 p.load(in);
             } catch (Exception e) {
-                System.out.println("[FarLands-G1] config read FAILED: " + e);
+                // the world exists and so does its configuration: falling back
+                // to defaults here would silently mis-place the epoch at (0,0)
+                // and corrupt generation - refuse to run instead
+                policyViolation("world config exists but cannot be read: " + file + " (" + e + ")");
             }
         }
         // Materialize <world>/farlands.properties so it exists on disk from the
@@ -135,7 +138,9 @@ public final class FarConfig {
                 String[] parts = Files.readString(legacy).trim().split(",");
                 p.setProperty("epoch_x", parts[0].trim());
                 p.setProperty("epoch_z", parts[1].trim());
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                policyViolation("legacy epoch file exists but cannot be parsed: " + legacy
+                    + " (" + e + ")");
             }
         }
         // spawnset: JVM flag > world-file key; sets the epoch (and respawn)
@@ -387,16 +392,27 @@ public final class FarConfig {
         }
     }
 
+    /** Thrown when the configuration is invalid or unreadable. */
+    public static final class ConfigException extends RuntimeException {
+        public ConfigException(String message) {
+            super(message);
+        }
+    }
+
     /**
-     * Policy violation: the configuration is invalid. Reject it and abort
-     * the JVM immediately (fail-fast) instead of silently running with
-     * defaults - a wrong epoch or a wrong margin can corrupt a world.
+     * Policy violation: the configuration is invalid or unreadable. Reject it
+     * by throwing (fail-fast) instead of silently running with defaults - a
+     * wrong epoch or a wrong margin can corrupt a world. The world-load path
+     * propagates this exception into a normal crash report, so the JVM's
+     * shutdown sequence (hooks included) runs; the previous
+     * {@code Runtime.halt(1)} skipped shutdown hooks and could strand world
+     * state.
      */
     private static void policyViolation(String message) {
         System.out.println("[FarLands-G1] POLICY VIOLATION: " + message);
-        System.out.println("[FarLands-G1] configuration rejected; aborting JVM (fail-fast).");
+        System.out.println("[FarLands-G1] configuration rejected; world load aborted.");
         System.out.flush();
-        Runtime.getRuntime().halt(1);
+        throw new ConfigException("FarLands-G1 policy violation: " + message);
     }
 
     /** Leveled logging: prints when {@code level <= debug} (debug: 0-3). */

@@ -44,6 +44,11 @@ public abstract class MinecraftServerEpochMixin {
                     System.out.println("[FarLands-G1] EPOCH set to real (" + pos.getX() + "," + pos.getZ() + ")");
                 }
             }
+        } catch (com.farlands.g1.util.FarConfig.ConfigException e) {
+            // invalid or unreadable configuration must abort the world load
+            // (a wrong epoch would corrupt generation) - let it become a
+            // crash report so the shutdown sequence runs normally
+            throw e;
         } catch (Throwable t) {
             System.out.println("[FarLands-G1] EPOCH set FAILED: " + t);
         }

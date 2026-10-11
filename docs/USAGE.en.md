@@ -94,14 +94,14 @@ after editing.
 | Parameter | Meaning | Range | Wrong-value consequence | Why this limit |
 |---|---|---|---|---|
 | `epoch_x` / `epoch_z` | World origin (real coordinate) | any integer | **All generated chunks desync** (see red line R1) | Unrestricted - but the consequence is irreversible and undetectable by the system |
-| `auto_relocate` | Auto re-center near the window edge | `true` / `false` | Non-boolean -> **JVM aborted** | Semantics must be explicit; silent fallback hides intent |
-| `relocate_margin` | Trigger distance (blocks) | >= 0 | Negative -> **JVM aborted**; too large -> late relocation (still usable) | Negative is meaningless; too small relocates constantly |
-| `fluid_tick_limit` | Fluid ticks per game tick | >= 0 (0 = unlimited) | Negative -> **JVM aborted**; too large -> CPU saturation in anomalous terrain (see R4) | 0 is valid semantics (off); negative is an error |
-| `archive_dir` | Epoch archive directory name | plain directory name | Empty / contains `/`, `\`, `..` -> **JVM aborted** | Path traversal writes outside the world |
-| `worldgen_sample_mode` | Far sampling policy | `raw` / `clamp` / `quantize` | Invalid -> **JVM aborted**; `clamp`/`quantize` change terrain (see R5) | The mode must be explicit; a typo must not silently mean raw |
-| `worldgen_sample_clamp` | Clamp bound | positive finite | Non-positive/NaN -> **JVM aborted**; too small -> heavy terrain repetition | 0 or NaN makes sampling meaningless |
-| `worldgen_far_threshold` | Policy applies beyond this (blocks) | >= 0 (0 = everywhere) | Negative -> **JVM aborted**; 0 -> terrain rewritten everywhere (see R5) | Negative is meaningless |
-| `debug` | Log level | `0`-`3` | Out of range -> **JVM aborted**; `3` -> enormous output (see R3) | Four fixed levels; out-of-range is an error |
+| `auto_relocate` | Auto re-center near the window edge | `true` / `false` | Non-boolean -> **world-load aborted** | Semantics must be explicit; silent fallback hides intent |
+| `relocate_margin` | Trigger distance (blocks) | >= 0 | Negative -> **world-load aborted**; too large -> late relocation (still usable) | Negative is meaningless; too small relocates constantly |
+| `fluid_tick_limit` | Fluid ticks per game tick | >= 0 (0 = unlimited) | Negative -> **world-load aborted**; too large -> CPU saturation in anomalous terrain (see R4) | 0 is valid semantics (off); negative is an error |
+| `archive_dir` | Epoch archive directory name | plain directory name | Empty / contains `/`, `\`, `..` -> **world-load aborted** | Path traversal writes outside the world |
+| `worldgen_sample_mode` | Far sampling policy | `raw` / `clamp` / `quantize` | Invalid -> **world-load aborted**; `clamp`/`quantize` change terrain (see R5) | The mode must be explicit; a typo must not silently mean raw |
+| `worldgen_sample_clamp` | Clamp bound | positive finite | Non-positive/NaN -> **world-load aborted**; too small -> heavy terrain repetition | 0 or NaN makes sampling meaningless |
+| `worldgen_far_threshold` | Policy applies beyond this (blocks) | >= 0 (0 = everywhere) | Negative -> **world-load aborted**; 0 -> terrain rewritten everywhere (see R5) | Negative is meaningless |
+| `debug` | Log level | `0`-`3` | Out of range -> **world-load aborted**; `3` -> enormous output (see R3) | Four fixed levels; out-of-range is an error |
 
 JVM flags override: `-Dfarlands.<key>=<value>`. Priority JVM > world file >
 global template; JVM flags are not persisted. See [configuration
@@ -132,10 +132,11 @@ Prohibited: launching with invalid values.
 Reason: a wrong epoch or margin destroys worlds; a silent fallback hides the
 mistake.
 
-Verification: tested (`debug=5` -> `POLICY VIOLATION` + JVM halt).
+Verification: tested (`debug=5` -> `POLICY VIOLATION` + world load aborted).
 
-Disposition: `POLICY VIOLATION` -> `Runtime.halt(1)`. **The system will not
-let you run with a broken config.**
+Disposition: `POLICY VIOLATION` -> throws `FarConfig.ConfigException`; the
+world load aborts into a normal crash report and the shutdown sequence (hooks
+included) runs. **The system will not let you run with a broken config.**
 
 ### R3: `debug=3` for normal play
 
@@ -224,7 +225,7 @@ guards (fluid limit), not prohibitions.
 |---|---|---|
 | Terrain continuous across 2^31, AABB works | tested | 2026-09, client at 2147481648 |
 | Cross-world epoch leak (new world inherits old epoch) | tested | 2026-09, reproduced on world creation + verified after fix |
-| `debug=5` -> JVM abort | tested | rig, `POLICY VIOLATION` + halt confirmed |
+| `debug=5` -> world-load abort | tested | rig, `POLICY VIOLATION` + ConfigException confirmed |
 | `worldgen` three modes at 1e306 | tested | rig, seed 12345, raw/clamp/quantize all gen OK |
 | 32 render distance in a phenomenon zone -> 3fps + paging | tested | 2026-09 stress test (AppHangB1) |
 | Unlimited fluid ticks -> CPU saturation | tested | watchdog stack (`getSlopeDistance` recursion chain) |

@@ -53,8 +53,9 @@ claims.
 - Config sources: the global template `config/farlands-g1.properties`
   (auto-created at init) and the per-world `farlands.properties` (set on the
   create-world FarLands tabs, or edited outside the game), with
-  `-Dfarlands.<key>=<value>` JVM overrides on top. Invalid values halt the JVM
-  by design (`POLICY VIOLATION`).
+  `-Dfarlands.<key>=<value>` JVM overrides on top. Invalid or unreadable
+  values abort the world load by design (`POLICY VIOLATION` ->
+  `FarConfig.ConfigException`, normal crash report + shutdown sequence).
 - Push only when the user's proxy is on; the user controls it.
 - Chinese files: use read/write/edit tools, never PowerShell
   Get-Content/Set-Content. Fork copies need UTF-8 BOM.
